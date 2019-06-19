@@ -40,8 +40,11 @@ class PageViewSet(viewsets.ViewSet):
     serializer_class = serializers.PageSerializer
 
     def list(self, request):
+        pages_to_return = pages
+        if 'url_filter' in request.query_params and request.query_params['url_filter'] != "":
+            pages_to_return = dict((k, v) for k, v in pages_to_return.items() if request.query_params['url_filter'] in v.url)
         serializer = serializers.PageSerializer(
-            instance=pages.values(), many=True)
+            instance=pages_to_return.values(), many=True)
         return Response(serializer.data)
 
     def create(self, request):
