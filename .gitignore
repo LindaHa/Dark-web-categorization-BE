@@ -128,3 +128,7 @@ dmypy.json
 !.idea/codeStyles
 !.idea/libraries
 !.idea/inspectionProfiles
+
+Include/
+LICENSE.txt
+Scripts/
