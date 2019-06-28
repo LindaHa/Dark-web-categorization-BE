@@ -4,6 +4,8 @@ from rest_framework import viewsets, status
 from . import serializers
 from .models import Page
 
+from .repositories import ElasticSearchRepository
+
 
 # Global variable used for the sake of simplicity.
 # In real life, you'll be using your own interface to a data store
@@ -38,11 +40,14 @@ def get_next_page_id():
 class PageViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
     serializer_class = serializers.PageSerializer
+    el_repository = ElasticSearchRepository()
 
     def list(self, request):
         pages_to_return = pages
         if 'url_filter' in request.query_params and request.query_params['url_filter'] != "":
-            pages_to_return = dict((k, v) for k, v in pages_to_return.items() if request.query_params['url_filter'] in v.url)
+            #pages_to_return = dict((k, v) for k, v in pages_to_return.items() if request.query_params['url_filter'] in v.url)
+            r = self.el_repository.basicSearch("content", request.query_params['url_filter'])
+            return Response(r)
         serializer = serializers.PageSerializer(
             instance=pages_to_return.values(), many=True)
         return Response(serializer.data)
