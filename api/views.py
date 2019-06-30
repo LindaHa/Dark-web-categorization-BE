@@ -1,8 +1,30 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 
+from api.utils.graph_helpers import Graph
 from . import serializers
 from .repositories import ElasticSearchRepository
+
+g4 = Graph(11)
+g4.add_edge(0, 1)
+g4.add_edge(0, 3)
+g4.add_edge(1, 2)
+g4.add_edge(1, 4)
+g4.add_edge(2, 0)
+g4.add_edge(2, 6)
+g4.add_edge(3, 2)
+g4.add_edge(4, 5)
+g4.add_edge(4, 6)
+g4.add_edge(5, 6)
+g4.add_edge(5, 7)
+g4.add_edge(5, 8)
+g4.add_edge(5, 9)
+g4.add_edge(6, 4)
+g4.add_edge(7, 9)
+g4.add_edge(8, 9)
+g4.add_edge(9, 8)
+"nSSC in fourth graph "
+print(g4.find_strongly_connected_components())
 
 
 class PageViewSet(viewsets.ViewSet):
@@ -18,14 +40,16 @@ class PageViewSet(viewsets.ViewSet):
             search_phrase = request.query_params["url_filter"]
             result = self.el_repository.basic_search(search_column, search_phrase)
         else:
-            result = self.el_repository.fetch_all()
+            # result = self.el_repository.fetch_all()
+            result = g4.components
 
         if result is None:
             return Response({"result": False, "message": "Could not get response"})
 
         serializer = serializers.PageSerializer(
             instance=result, many=True)
-        return Response({"result": True, "data": serializer.data})
+        # return Response({"result": True, "data": serializer.data})
+        return Response({"result": True, "data": result})
 
     # def create(self, request):
     #     serializer = serializers.PageSerializer(data=request.data)

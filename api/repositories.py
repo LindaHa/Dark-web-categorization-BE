@@ -1,5 +1,5 @@
 from pip._vendor import requests
-from api.utils import get_pages_from_json
+from api.utils.parsers import get_pages_from_json
 
 
 class ElasticSearchRepository(object):
