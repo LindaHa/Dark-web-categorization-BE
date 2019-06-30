@@ -4,10 +4,10 @@ from .models import Page
 
 class PageSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
-    url = serializers.CharField(max_length=256)
-    description = serializers.CharField()
-    linksTo = serializers.CharField()
-    categories = serializers.CharField()
+    url = serializers.CharField()
+    content = serializers.CharField()
+    links = serializers.StringRelatedField(many=True)
+    title = serializers.CharField()
 
     def create(self, validated_data):
         return Page(id=None, **validated_data)
