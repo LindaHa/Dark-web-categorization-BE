@@ -1,37 +1,47 @@
 from collections import defaultdict
 
+from api.models import Component
+
 
 def create_hash_tables(pages):
     index = 0
-    table_to_index = dict()
-    table_to_url = dict()
-    for page in pages:
-        url = page.url
-        if url not in table_to_index:
-            table_to_index[url] = index
-            table_to_url[index] = url
+    table_to_alias = dict()
+    table_to_original = dict()
+    for page_row in pages:
+        page = pages.get(page_row)
+        page_id = page.id
+        if page_id not in table_to_alias:
+            table_to_alias[page_id] = index
+            table_to_original[index] = page_id
             index += 1
-        for link in page.links:
-            link_url = link.get("link")
-            if link_url not in table_to_index:
-                table_to_index[link_url] = index
-                table_to_url[index] = link_url
-                index += 1
-    return table_to_index, table_to_url
+        # for link in page.links:
+        #     link_url = link.get("link")
+        #     if link_url not in table_to_alias:
+        #         table_to_alias[link_url] = index
+        #         table_to_original[index] = link_url
+        #         index += 1
+    return table_to_alias, table_to_original
 
 
 def get_page_aliases(pages, table_to_alias):
     pairs = defaultdict(list)
-    for page in pages:
-        url = page.url
-        page_index = table_to_alias[url]
+    for page_row in pages:
+        page = pages.get(page_row)
+        page_index = table_to_alias[page.id]
+        if page_index is None:
+            break
+
         links = page.links
         if not links:
             pairs[page_index] = []
         else:
             for link in links:
-                link_index = table_to_alias[link.get('link')]
-                pairs[page_index].append(link_index)
+                link_original = link.link
+                link_index = table_to_alias.get(link_original)
+                if link_index is None:
+                    pairs[page_index] = []
+                else:
+                    pairs[page_index].append(link_index)
     return pairs
 
 
@@ -42,57 +52,6 @@ def get_page_originals(components, table_to_original):
             node_original = table_to_original[node_alias]
             original_components[key].append(node_original)
     return original_components
-#
-# def find_strong_components(pages):
-#     index = 0
-#     visited_stack = defaultdict(list)
-#     vertices = get_raw_relations(pages)
-#     strongly_connected_components = defaultdict(list)
-#     number_of_vertices = len(vertices)
-#     for i in range(number_of_vertices):
-#         enriched_vertex = dict()
-#         enriched_vertex["value"] = i
-#         visited_stack, index, strongly_connected_components = strong_connect(
-#             enriched_vertex,
-#             visited_stack,
-#             index,
-#             vertices,
-#             strongly_connected_components
-#         )
-#     return strongly_connected_components
-#
-#
-# def strong_connect(vertex, visited_stack, index, vertices, strongly_connected_components):
-#     # Set the depth index for v to the smallest unused index
-#     vertex["index"] = index
-#     vertex["low_link"] = index
-#     index += 1
-#     visited_stack.push(vertex)
-#     vertex["is_on_stack"] = True
-#
-#     # Consider successors of v
-#     for successor_vertex in vertices[vertex]:
-#         if successor_vertex['index'] is None:
-#             # successor_vertex has not yet been visited; recurse on it
-#             strong_connect(successor_vertex, visited_stack, index, vertices, strongly_connected_components)
-#             vertex["low_link"] = min(vertex["low_link"], successor_vertex["low_link"])
-#         elif successor_vertex["is_on_stack"]:
-#             # successor_vertex is in stack S and hence in the current SCC
-#             # If successor_vertex is not on stack, then (v, w) is a cross-edge in the DFS tree and must be ignored
-#             # Note: The next line may look odd - but is correct.
-#             # It says successor_vertex[index] not successor_vertex["low_link"];
-#             # that is deliberate and from the original paper
-#             vertex["low_link"] = min(vertex["low_link"], successor_vertex["index"])
-#
-#     # If v is a root node, pop the stack and generate an SCC
-#     if vertex["low_link"]:
-#         while True:
-#             successor_vertex = visited_stack.pop()
-#             successor_vertex.on_stack = False
-#             strongly_connected_components[vertex] = successor_vertex
-#             if successor_vertex == vertex:
-#                 break
-#         return visited_stack, index, strongly_connected_components
 
 
 def strong_connect(
@@ -152,14 +111,28 @@ def strong_connect(
     )
 
 
-def find_strong_components(pages):
+def get_linked_components_from_ids(pages, components):
+    linked_components = []
+    for key, nodes in components.items():
+        component_links = []
+        component_pages = []
+        for node in nodes:
+            full_node = pages.get(node)
+            component_pages.append(full_node)
+            full_links = full_node.links
+            component_links.extend(full_links)
+
+        component = Component(id=key, links=component_links, members=component_pages)
+        linked_components.append(component)
+    return linked_components
+
+
+def find_strong_components(vertices):
     # Mark all the vertices as not visited
     # and Initialize parent and visited,
     # and ap(articulation point) arrays
     time = 0
     components = defaultdict(list)
-    table_to_alias, table_to_original = create_hash_tables(pages)
-    vertices = get_page_aliases(pages, table_to_alias)
 
     number_of_vertices = len(vertices)
     discovery_time = [-1] * number_of_vertices
@@ -182,4 +155,16 @@ def find_strong_components(pages):
                 visited_stack,
                 components,
             )
-    return get_page_originals(components, table_to_original)
+
+    return components
+
+
+def get_linked_components(pages):
+    table_to_alias, table_to_original = create_hash_tables(pages)
+    vertices = get_page_aliases(pages, table_to_alias)
+
+    strong_components = find_strong_components(vertices)
+    page_originals = get_page_originals(strong_components, table_to_original)
+    linked_components = get_linked_components_from_ids(pages, page_originals)
+
+    return linked_components
