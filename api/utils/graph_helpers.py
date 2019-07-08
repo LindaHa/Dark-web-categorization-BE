@@ -20,22 +20,28 @@ def create_hash_tables(pages):
     return table_to_index, table_to_url
 
 
-def get_raw_relations(pages):
+def get_page_aliases(pages, table_to_alias):
     pairs = defaultdict(list)
-    table_to_index, table_to_url = create_hash_tables(pages)
     for page in pages:
         url = page.url
-        page_index = table_to_index[url]
+        page_index = table_to_alias[url]
         links = page.links
         if not links:
             pairs[page_index] = []
         else:
             for link in links:
-                link_index = table_to_index[link.get('link')]
+                link_index = table_to_alias[link.get('link')]
                 pairs[page_index].append(link_index)
     return pairs
 
 
+def get_page_originals(components, table_to_original):
+    original_components = defaultdict(list)
+    for key in components:
+        for node_alias in components[key]:
+            node_original = table_to_original[node_alias]
+            original_components[key].append(node_original)
+    return original_components
 #
 # def find_strong_components(pages):
 #     index = 0
@@ -151,10 +157,11 @@ def find_strong_components(pages):
     # and Initialize parent and visited,
     # and ap(articulation point) arrays
     time = 0
-    vertices = get_raw_relations(pages)
     components = defaultdict(list)
-    number_of_vertices = len(vertices)
+    table_to_alias, table_to_original = create_hash_tables(pages)
+    vertices = get_page_aliases(pages, table_to_alias)
 
+    number_of_vertices = len(vertices)
     discovery_time = [-1] * number_of_vertices
     earliest_reachable_nodes = [-1] * number_of_vertices
     is_stack_member = [False] * number_of_vertices
@@ -175,4 +182,4 @@ def find_strong_components(pages):
                 visited_stack,
                 components,
             )
-    return components
+    return get_page_originals(components, table_to_original)

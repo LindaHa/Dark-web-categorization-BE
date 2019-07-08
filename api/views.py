@@ -2,16 +2,17 @@ from rest_framework.response import Response
 from rest_framework import viewsets, status
 
 from api.models import Page
-from api.utils.graph_helpers import Graph, find_strong_components
+from api.utils.graph_helpers import find_strong_components
 from . import serializers
 from .repositories import ElasticSearchRepository
 
 pages = [
-    Page(id="0", url="0", title="0", links=[{"link": "2"}, {"link": "3"}], content="0"),
-    Page(id="1", url="1", title="1", links=[{"link": "0"}], content="1"),
-    Page(id="2", url="2", title="2", links=[{"link": "1"}], content="2"),
-    Page(id="3", url="3", title="3", links=[], content="3"),
-    Page(id="4", url="4", title="4", links=[], content="4"),
+    Page(id="zero", url="zero", title="zero", links=[{"link": "two"}, {"link": "three"}], content="zero"),
+    Page(id="one", url="one", title="one", links=[{"link": "zero"}], content="one"),
+    Page(id="two", url="two", title="two", links=[{"link": "one"}], content="two"),
+    Page(id="three", url="three", title="three", links=[{"link": "five"}], content="three"),
+    Page(id="four", url="four", title="four", links=[], content="four"),
+    Page(id="five", url="five", title="five", links=[{"link": "four"}], content="five"),
 ]
 
 
