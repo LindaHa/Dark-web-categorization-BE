@@ -1,19 +1,19 @@
 from rest_framework.response import Response
 from rest_framework import viewsets
 
-from api.models import Page
+from api.models import Page, Link
 from api.utils.graph_helpers import get_linked_components
 from . import serializers
 from .repositories import ElasticSearchRepository
 
-pages = [
-    Page(id="zero", url="zero", title="zero", links=[{"link": "two"}, {"link": "three"}], content="zero"),
-    Page(id="one", url="one", title="one", links=[{"link": "zero"}], content="one"),
-    Page(id="two", url="two", title="two", links=[{"link": "one"}], content="two"),
-    Page(id="three", url="three", title="three", links=[{"link": "five"}], content="three"),
-    Page(id="four", url="four", title="four", links=[], content="four"),
-    Page(id="five", url="five", title="five", links=[{"link": "fohr"}], content="five"),
-]
+pages = {
+    "zero.onion": Page(id="zero", url="zero.onion", title="zero", links=[Link(link="two.onion"), Link(link="three.onion")], content="zero"),
+    "one.onion": Page(id="one", url="one.onion", title="one", links=[Link(link="zero.onion")], content="one"),
+    "two.onion": Page(id="two", url="two.onion", title="two", links=[Link(link="one.onion")], content="two"),
+    "three.onion": Page(id="three", url="three.onion", title="three", links=[Link(link="five.onion")], content="three"),
+    "four.onion": Page(id="four", url="four.onion", title="four", links=[], content="four"),
+    "five.onion": Page(id="five", url="five.onion", title="five", links=[Link(link="fohr.onion")], content="five"),
+}
 
 
 class PageViewSet(viewsets.ViewSet):
@@ -25,12 +25,11 @@ class PageViewSet(viewsets.ViewSet):
         if "url_filter" in request.query_params and request.query_params["url_filter"] != "":
             search_column = "content"
             search_phrase = request.query_params["url_filter"]
-            result = self.el_repository.basic_search(search_column, search_phrase)
+            response = self.el_repository.basic_search(search_column, search_phrase)
         else:
             response = self.el_repository.fetch_all()
-            # result = response
-            result = get_linked_components(response)
 
+        result = get_linked_components(response)
         if result is None:
             return Response({"result": False, "message": "Could not get response"})
         serializer = serializers.ComponentSerializer(

@@ -9,10 +9,10 @@ def create_hash_tables(pages):
     table_to_original = dict()
     for page_row in pages:
         page = pages.get(page_row)
-        page_id = page.id
-        if page_id not in table_to_alias:
-            table_to_alias[page_id] = index
-            table_to_original[index] = page_id
+        page_url = page.url
+        if page_url not in table_to_alias:
+            table_to_alias[page_url] = index
+            table_to_original[index] = page_url
             index += 1
         # for link in page.links:
         #     link_url = link.get("link")
@@ -27,7 +27,7 @@ def get_page_aliases(pages, table_to_alias):
     pairs = defaultdict(list)
     for page_row in pages:
         page = pages.get(page_row)
-        page_index = table_to_alias[page.id]
+        page_index = table_to_alias[page.url]
         if page_index is None:
             break
 

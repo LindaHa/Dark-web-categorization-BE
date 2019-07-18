@@ -1,5 +1,6 @@
 from api.models import Page, Link
 
+
 def get_pages_from_json(json):
     pages_to_return = {}
     response_pages = json.get("hits").get("hits")
@@ -12,7 +13,7 @@ def get_pages_from_json(json):
             response_links = page_info.get("links")
             links = get_links_from_json(response_links)
             content = page_info.get("content")
-            pages_to_return[page_id] = (Page(id=page_id, url=url, title=title, links=links, content=content))
+            pages_to_return[url] = (Page(id=page_id, url=url, title=title, links=links, content=content))
     return pages_to_return
 
 
