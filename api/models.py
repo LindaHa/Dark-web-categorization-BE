@@ -6,7 +6,7 @@ class Page(object):
 
 class Component(object):
     def __init__(self, **kwargs):
-        for field in ("id", "links", "members"):
+        for field in ("id", "members"):
             setattr(self, field, kwargs.get(field, None))
 
 

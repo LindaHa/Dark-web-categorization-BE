@@ -114,15 +114,13 @@ def strong_connect(
 def get_linked_components_from_ids(pages, components):
     linked_components = []
     for key, nodes in components.items():
-        component_links = []
         component_pages = []
         for node in nodes:
             full_node = pages.get(node)
             component_pages.append(full_node)
             full_links = full_node.links
-            component_links.extend(full_links)
 
-        component = Component(id=key, links=component_links, members=component_pages)
+        component = Component(id=key, members=component_pages)
         linked_components.append(component)
     return linked_components
 

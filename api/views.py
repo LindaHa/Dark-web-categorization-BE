@@ -29,7 +29,7 @@ class PageViewSet(viewsets.ViewSet):
         else:
             response = self.el_repository.fetch_all()
 
-        result = get_linked_components(response)
+        result = get_linked_components(pages)
         if result is None:
             return Response({"result": False, "message": "Could not get response"})
         serializer = serializers.ComponentSerializer(

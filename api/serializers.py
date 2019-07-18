@@ -33,7 +33,6 @@ class PageSerializer(serializers.Serializer):
 
 class ComponentSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
-    links = LinkSerializer(many=True)
     members = PageSerializer(many=True)
 
     def create(self, validated_data):
