@@ -1,6 +1,5 @@
 from collections import defaultdict
-
-from api.models import Component
+from api.models import Component, Link
 
 
 def create_hash_tables(pages):
@@ -52,6 +51,15 @@ def get_page_originals(components, table_to_original):
             node_original = table_to_original[node_alias]
             original_components[key].append(node_original)
     return original_components
+
+
+def get_page_component_pairs(components):
+    pages_components_pairs = {}
+    for component in components:
+        for node in component.members:
+            pages_components_pairs[node.url] = component.id
+
+    return pages_components_pairs
 
 
 def strong_connect(
@@ -111,17 +119,34 @@ def strong_connect(
     )
 
 
-def get_linked_components_from_ids(pages, components):
+def get_full_nodes_for_components(pages, components):
     linked_components = []
     for key, nodes in components.items():
         component_pages = []
         for node in nodes:
             full_node = pages.get(node)
             component_pages.append(full_node)
-            full_links = full_node.links
 
         component = Component(id=key, members=component_pages)
         linked_components.append(component)
+    return linked_components
+
+
+def get_linked_components_from_ids(pages, components):
+    linked_components = get_full_nodes_for_components(pages, components)
+    page_component_pairs_table = get_page_component_pairs(linked_components)
+    for component in linked_components:
+        components_ids = set()
+        component_links = []
+        for node in component.members:
+            links = node.links
+            for link in links:
+                component_link = page_component_pairs_table.get(link.link)
+                if component_link is not None and component_link not in components_ids:
+                    components_ids.add(component_link)
+                    component_links.append(Link(link=component_link))
+
+        component.links = component_links
     return linked_components
 
 

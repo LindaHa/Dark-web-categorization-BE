@@ -31,8 +31,8 @@ class PageViewSet(viewsets.ViewSet):
 
         result = get_linked_components(pages)
         if result is None:
-            return Response({"result": False, "message": "Could not get response"})
+            return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
         serializer = serializers.ComponentSerializer(
             instance=result, many=True)
-        return Response({"result": True, "data": serializer.data})
+        return Response({"result": True, "data": serializer.data}, content_type='application/json')
         # return Response({"result": True, "data": result})
