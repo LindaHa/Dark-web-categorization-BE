@@ -140,11 +140,12 @@ def get_linked_components_from_ids(pages, components):
         component_links = []
         for node in component.members:
             links = node.links
-            for link in links:
-                component_link = page_component_pairs_table.get(link.link)
-                if component_link is not None and component_link not in components_ids:
-                    components_ids.add(component_link)
-                    component_links.append(Link(link=component_link))
+            if links is not None:
+                for link in links:
+                    component_link = page_component_pairs_table.get(link.link)
+                    if component_link is not None and component_link not in components_ids:
+                        components_ids.add(component_link)
+                        component_links.append(Link(link=component_link))
 
         component.links = component_links
     return linked_components
