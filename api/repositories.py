@@ -32,7 +32,7 @@ class ElasticSearchRepository(object):
 
     def fetch_all(self):
         payload = {
-            "from": 0, "size": 100,
+            "from": 0, "size": 1000,
             "query": {
                 "match_all": {}
             }

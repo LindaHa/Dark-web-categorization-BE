@@ -28,19 +28,24 @@ def get_page_aliases(pages, table_to_alias):
         page = pages.get(page_row)
         page_index = table_to_alias[page.url]
         if page_index is None:
-            break
+            continue
 
         links = page.links
-        if not links:
+        # if not links:
+        if not links and pairs[page_index] is None:
             pairs[page_index] = []
-        else:
+        # else:
+        elif links:
             for link in links:
                 link_original = link.link
                 link_index = table_to_alias.get(link_original)
-                if link_index is None:
+                # if link_index is None:
+                if link_index is None and pairs[page_index] is None:
                     pairs[page_index] = []
-                else:
+                # else:
+                elif link_index is not None:
                     pairs[page_index].append(link_index)
+                    pairs[link_index].append(page_index)
     return pairs
 
 
