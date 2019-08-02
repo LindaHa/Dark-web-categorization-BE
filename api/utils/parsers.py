@@ -1,9 +1,25 @@
 from api.models import Page, Link
 
 
+def get_hits(json):
+    return json.get("hits").get("hits")
+
+
+def get_scroll_id(json):
+    return json.get("_scroll_id")
+
+
+def get_total_in_db(json):
+    return json.get("hits").get("total")
+
+
+def taken_from_db(json):
+    return json.get("shards").get("total")
+
+
 def get_pages_from_json(json):
     pages_to_return = {}
-    response_pages = json.get("hits").get("hits")
+    response_pages = get_hits(json)
     for page in response_pages:
         page_info = page.get("_source")
         url = page_info.get("url")

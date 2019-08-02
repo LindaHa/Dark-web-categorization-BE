@@ -18,7 +18,8 @@ class LinkSerializer(serializers.Serializer):
 class PageSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
     url = serializers.CharField()
-    content = serializers.CharField()
+    # commenting this out because it's too much data to send to the client's side
+    # content = serializers.CharField()
     links = LinkSerializer(many=True)
     title = serializers.CharField()
 
