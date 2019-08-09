@@ -1,5 +1,7 @@
 from pip._vendor import requests
-from api.utils.parsers import get_pages_from_json, get_total_in_db, get_scroll_id, get_hits
+from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
+from api.models import Page
+from typing import Dict, Union
 
 
 CHUNK_SIZE = 500
@@ -10,7 +12,7 @@ class ElasticSearchRepository(object):
         self.server = "http://147.251.124.23:9200/"
         self.end_point_url = self.server + "tor,i2p/"
 
-    def basic_search(self, search_column, search_phrase):
+    def basic_search(self, search_column, search_phrase) -> Union[Dict[str, Page], None]:
         payload = {
             "query": {
                 # "multi_match": {
@@ -34,7 +36,7 @@ class ElasticSearchRepository(object):
         else:
             return None
 
-    def fetch_chunk(self, scroll_id):
+    def fetch_chunk(self, scroll_id) -> Union[str, None]:
         payload = {
             "scroll": "1m",
             "scroll_id": scroll_id
@@ -45,7 +47,7 @@ class ElasticSearchRepository(object):
         else:
             return None
 
-    def fetch_all(self):
+    def fetch_all(self) -> Dict[str, Page]:
         payload = {
             "size": CHUNK_SIZE,
             "query": {
@@ -62,7 +64,7 @@ class ElasticSearchRepository(object):
             hits = get_hits(json)
             i = 0
 
-            while hits:
+            while i < 10:
                 chunk_json = self.fetch_chunk(scroll_id)
 
                 scroll_id = get_scroll_id(chunk_json)

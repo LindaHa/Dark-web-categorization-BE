@@ -1,8 +1,9 @@
 from collections import defaultdict
-from api.models import Component, Link
+from api.models import Component, Link, Page
+from typing import Dict, List, Tuple
 
 
-def create_hash_tables(pages):
+def create_hash_tables(pages: Dict[str, Page]) -> Tuple[Dict[str, int], Dict[int, str]]:
     index = 0
     table_to_alias = dict()
     table_to_original = dict()
@@ -22,7 +23,10 @@ def create_hash_tables(pages):
     return table_to_alias, table_to_original
 
 
-def get_page_aliases(pages, table_to_alias):
+def get_page_aliases(
+        pages: Dict[str, Page],
+        table_to_alias: Dict[str, int]
+) -> Dict[int, List[int]]:
     pairs = defaultdict(list)
     for page_row in pages:
         page = pages.get(page_row)
@@ -49,16 +53,19 @@ def get_page_aliases(pages, table_to_alias):
     return pairs
 
 
-def get_page_originals(components, table_to_original):
-    original_components = defaultdict(list)
+def get_page_originals(
+        components: Dict[int, List[int]],
+        table_to_original: Dict[int, str]
+) -> Dict[int, List[str]]:
+    original_pages_key = defaultdict(list)
     for key in components:
         for node_alias in components[key]:
             node_original = table_to_original[node_alias]
-            original_components[key].append(node_original)
-    return original_components
+            original_pages_key[key].append(node_original)
+    return original_pages_key
 
 
-def get_page_component_pairs(components):
+def get_page_component_pairs(components: List[Component]) -> Dict[str, str]:
     pages_components_pairs = {}
     for component in components:
         for node in component.members:
@@ -68,15 +75,15 @@ def get_page_component_pairs(components):
 
 
 def strong_connect(
-        time,
-        graph,
-        node,
-        is_stack_member_collection,
-        earliest_reachable_node,
-        discovery_time,
-        visited_stack,
-        components,
-):
+        time: int,
+        graph: Dict[int, List[int]],
+        node: int,
+        is_stack_member_collection: List[bool],
+        earliest_reachable_node: List[int],
+        discovery_time: List[int],
+        visited_stack: List[int],
+        components: Dict[int, List[int]],
+) -> Tuple[int, Dict[int, List[int]]]:
     # Initialize discovery time and low value
     discovery_time[node] = time
     earliest_reachable_node[node] = time
@@ -124,7 +131,10 @@ def strong_connect(
     )
 
 
-def get_full_nodes_for_components(pages, components):
+def get_full_nodes_for_components(
+        pages: Dict[str, Page],
+        components: Dict[int, List[str]]
+) -> List[Component]:
     linked_components = []
     for key, nodes in components.items():
         component_pages = []
@@ -137,7 +147,10 @@ def get_full_nodes_for_components(pages, components):
     return linked_components
 
 
-def get_linked_components_from_ids(pages, components):
+def get_linked_components_from_ids(
+        pages: Dict[str, Page],
+        components: Dict[int, List[str]]
+) -> List[Component]:
     linked_components = get_full_nodes_for_components(pages, components)
     page_component_pairs_table = get_page_component_pairs(linked_components)
     for component in linked_components:
@@ -156,7 +169,7 @@ def get_linked_components_from_ids(pages, components):
     return linked_components
 
 
-def find_strong_components(vertices):
+def find_strong_components(vertices: Dict[int, List[int]]) -> Dict[int, List[int]]:
     # Mark all the vertices as not visited
     # and Initialize parent and visited,
     # and ap(articulation point) arrays
@@ -188,7 +201,7 @@ def find_strong_components(vertices):
     return components
 
 
-def get_linked_components(pages):
+def get_linked_components(pages: Dict[str, Page]) -> List[Component]:
     table_to_alias, table_to_original = create_hash_tables(pages)
     vertices = get_page_aliases(pages, table_to_alias)
 

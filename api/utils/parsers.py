@@ -1,23 +1,24 @@
 from api.models import Page, Link
+from typing import Dict, List
 
 
-def get_hits(json):
+def get_hits(json) -> str:
     return json.get("hits").get("hits")
 
 
-def get_scroll_id(json):
+def get_scroll_id(json) -> str:
     return json.get("_scroll_id")
 
 
-def get_total_in_db(json):
+def get_total_in_db(json) -> str:
     return json.get("hits").get("total")
 
 
-def taken_from_db(json):
+def taken_from_db(json) -> str:
     return json.get("shards").get("total")
 
 
-def get_pages_from_json(json):
+def get_pages_from_json(json) -> Dict[str, Page]:
     pages_to_return = {}
     response_pages = get_hits(json)
     for page in response_pages:
@@ -33,7 +34,7 @@ def get_pages_from_json(json):
     return pages_to_return
 
 
-def get_links_from_json(json_links):
+def get_links_from_json(json_links) -> List[Link]:
     links = []
     if json_links:
         for json_link in json_links:
