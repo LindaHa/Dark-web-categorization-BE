@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List
 
 
 class Link(object):
@@ -22,11 +22,21 @@ class Page(object):
             setattr(self, field, kwargs.get(field, None))
 
 
-class Component(object):
+class Group(object):
     id: str
     links: List[Link]
     members: List[Page]
 
     def __init__(self, **kwargs):
         for field in ("id", "links", "members"):
+            setattr(self, field, kwargs.get(field, None))
+
+
+class MetaGroup(object):
+    id: str
+    links: List[str]
+    members_count: int
+
+    def __init__(self, **kwargs):
+        for field in ("id", "links", "members_count"):
             setattr(self, field, kwargs.get(field, None))

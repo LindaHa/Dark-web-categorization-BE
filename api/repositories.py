@@ -64,7 +64,7 @@ class ElasticSearchRepository(object):
             hits = get_hits(json)
             i = 0
 
-            while i < 10:
+            while hits:
                 chunk_json = self.fetch_chunk(scroll_id)
 
                 scroll_id = get_scroll_id(chunk_json)

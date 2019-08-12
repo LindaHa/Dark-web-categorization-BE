@@ -124,57 +124,67 @@ def strong_connect(
     )
 
 
-def get_full_nodes_for_groups(
-        pages: Dict[str, Page],
-        partition: Dict[str, int]
-) -> List[Group]:
-    result = []
-    groups_with_full_nodes = defaultdict(list)
-    for node_key, group_key in partition.items():
-        full_node = pages.get(node_key)
-        groups_with_full_nodes[group_key].append(full_node)
-
-    for group_id in groups_with_full_nodes:
-        group = Group(id=group_id, members=groups_with_full_nodes[group_id])
-        result.append(group)
-
-    return result
-
-
 def get_links_of_groups(
         pages: Dict[str, Page],
-        partition: Dict[str, int]
+        reversed_partition: Dict[int, List[str]]
 ) -> Dict[int, List[str]]:
     groups_with_links = defaultdict(list)
-    for node_key, group_key in partition.items():
-        full_node = pages.get(node_key)
-        if full_node and full_node.links:
-            for link in full_node.links:
-                if link not in groups_with_links[group_key]:
-                    groups_with_links[group_key].append(full_node.links)
+    for group_key, nodes in reversed_partition.items():
+        for node in nodes:
+            full_node = pages.get(node)
+            if full_node and full_node.links:
+                for link in full_node.links:
+                    if link.link not in groups_with_links[group_key]:
+                        groups_with_links[group_key].append(link.link)
 
     return groups_with_links
 
 
-def get_linked_groups_from_ids(
+def reverse_partition(
+    partition: Dict[str, int]
+) -> Dict[int, List[str]]:
+    groups_with_nodes = defaultdict(list)
+    for node_key, group_key in partition.items():
+        groups_with_nodes[group_key].append(node_key)
+
+    return groups_with_nodes
+
+
+def filter_orphaned_nodes(
+    reversed_partition: Dict[int, List[str]],
+    groups_with_links: Dict[int, List[str]],
+) -> List[int]:
+    relevant_groups = []
+
+    for group_key, nodes in reversed_partition.items():
+        linked_group = groups_with_links[group_key]
+        if len(nodes) > 1 and linked_group:
+            relevant_groups.append(group_key)
+
+    return relevant_groups
+
+
+def get_linked_meta_groups_from_ids(
         pages: Dict[str, Page],
         partition: Dict[str, int]
-) -> List[Group]:
+) -> List[MetaGroup]:
     meta_groups = []
-    groups_with_links = get_links_of_groups(pages, partition)
-    for group_id in groups_with_links:
+    reversed_partition = reverse_partition(partition)
+    groups_with_links = get_links_of_groups(pages, reversed_partition)
+
+    relevant_groups = filter_orphaned_nodes(reversed_partition, groups_with_links)
+
+    for group_id in relevant_groups:
         group_links = []
-        visited_links = []
         links = groups_with_links[group_id]
         if links is not None:
             for link in links:
                 link_to_group = partition.get(link)
                 # TODO: if there is no node for the link create a new group with default values
-                if link_to_group is not None and link_to_group not in visited_links:
-                    visited_links.add(link_to_group)
-                    group_links.append(Link(link=link_to_group))
+                if link_to_group is not None and link_to_group not in group_links:
+                    group_links.append(link_to_group)
 
-        meta_group = MetaGroup(id=group_id.id, links=group_links, members_count=group_id.members.count())
+        meta_group = MetaGroup(id=group_id, links=group_links, members_count=len(reversed_partition[group_id]))
         meta_groups.append(meta_group)
 
     return meta_groups
@@ -212,7 +222,7 @@ def find_strong_components(vertices: Dict[int, List[int]]) -> Dict[int, List[int
     return components
 
 
-def get_linked_groups(pages: Dict[str, Page]) -> List[Group]:
+def get_linked_groups(pages: Dict[str, Page]) -> List[MetaGroup]:
     graph = nx.Graph()
 
     table_to_alias, table_to_original = create_hash_tables(pages)
@@ -224,7 +234,7 @@ def get_linked_groups(pages: Dict[str, Page]) -> List[Group]:
 
     partition = cylouvain.best_partition(graph)
     page_originals = get_original_node_key_group_pairs(partition, table_to_original)
-    linked_groups = get_linked_groups_from_ids(pages, page_originals)
+    linked_groups = get_linked_meta_groups_from_ids(pages, page_originals)
 
     return linked_groups
 

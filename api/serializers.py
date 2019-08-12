@@ -1,5 +1,9 @@
 from rest_framework import serializers
-from .models import Page, Component, Link
+from .models import Page, Group, Link
+
+
+class StringListField(serializers.ListField):
+    child = serializers.CharField()
 
 
 class LinkSerializer(serializers.Serializer):
@@ -32,13 +36,27 @@ class PageSerializer(serializers.Serializer):
         return instance
 
 
-class ComponentSerializer(serializers.Serializer):
+class GroupSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
     links = LinkSerializer(many=True)
     members = PageSerializer(many=True)
 
     def create(self, validated_data):
-        return Component(id=None, **validated_data)
+        return Group(id=None, **validated_data)
+
+    def update(self, instance, validated_data):
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        return instance
+
+
+class MetaGroupSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+    links = StringListField()
+    members_count = serializers.IntegerField()
+
+    def create(self, validated_data):
+        return Group(id=None, **validated_data)
 
     def update(self, instance, validated_data):
         for field, value in validated_data.items():
