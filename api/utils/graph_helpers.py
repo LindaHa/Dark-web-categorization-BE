@@ -1,7 +1,8 @@
 from collections import defaultdict
-from api.models import Component, Link, Page
+from api.models import Group, Link, MetaGroup, Page
 from typing import Dict, List, Tuple
-
+import cylouvain
+import networkx as nx
 
 def create_hash_tables(pages: Dict[str, Page]) -> Tuple[Dict[str, int], Dict[int, str]]:
     index = 0
@@ -23,7 +24,7 @@ def create_hash_tables(pages: Dict[str, Page]) -> Tuple[Dict[str, int], Dict[int
     return table_to_alias, table_to_original
 
 
-def get_page_aliases(
+def get_node_aliases(
         pages: Dict[str, Page],
         table_to_alias: Dict[str, int]
 ) -> Dict[int, List[int]]:
@@ -53,25 +54,17 @@ def get_page_aliases(
     return pairs
 
 
-def get_page_originals(
-        components: Dict[int, List[int]],
+def get_original_node_key_group_pairs(
+        partition: Dict[int, int],
         table_to_original: Dict[int, str]
-) -> Dict[int, List[str]]:
-    original_pages_key = defaultdict(list)
-    for key in components:
-        for node_alias in components[key]:
-            node_original = table_to_original[node_alias]
-            original_pages_key[key].append(node_original)
-    return original_pages_key
+) -> Dict[str, int]:
+    original_node_key_group_pairs = {}
+    for node_alias in partition:
+        associated_component_key = partition[node_alias]
+        original_node_key = table_to_original[node_alias]
+        original_node_key_group_pairs[original_node_key] = associated_component_key
 
-
-def get_page_component_pairs(components: List[Component]) -> Dict[str, str]:
-    pages_components_pairs = {}
-    for component in components:
-        for node in component.members:
-            pages_components_pairs[node.url] = component.id
-
-    return pages_components_pairs
+    return original_node_key_group_pairs
 
 
 def strong_connect(
@@ -131,42 +124,60 @@ def strong_connect(
     )
 
 
-def get_full_nodes_for_components(
+def get_full_nodes_for_groups(
         pages: Dict[str, Page],
-        components: Dict[int, List[str]]
-) -> List[Component]:
-    linked_components = []
-    for key, nodes in components.items():
-        component_pages = []
-        for node in nodes:
-            full_node = pages.get(node)
-            component_pages.append(full_node)
+        partition: Dict[str, int]
+) -> List[Group]:
+    result = []
+    groups_with_full_nodes = defaultdict(list)
+    for node_key, group_key in partition.items():
+        full_node = pages.get(node_key)
+        groups_with_full_nodes[group_key].append(full_node)
 
-        component = Component(id=key, members=component_pages)
-        linked_components.append(component)
-    return linked_components
+    for group_id in groups_with_full_nodes:
+        group = Group(id=group_id, members=groups_with_full_nodes[group_id])
+        result.append(group)
+
+    return result
 
 
-def get_linked_components_from_ids(
+def get_links_of_groups(
         pages: Dict[str, Page],
-        components: Dict[int, List[str]]
-) -> List[Component]:
-    linked_components = get_full_nodes_for_components(pages, components)
-    page_component_pairs_table = get_page_component_pairs(linked_components)
-    for component in linked_components:
-        components_ids = set()
-        component_links = []
-        for node in component.members:
-            links = node.links
-            if links is not None:
-                for link in links:
-                    component_link = page_component_pairs_table.get(link.link)
-                    if component_link is not None and component_link not in components_ids:
-                        components_ids.add(component_link)
-                        component_links.append(Link(link=component_link))
+        partition: Dict[str, int]
+) -> Dict[int, List[str]]:
+    groups_with_links = defaultdict(list)
+    for node_key, group_key in partition.items():
+        full_node = pages.get(node_key)
+        if full_node and full_node.links:
+            for link in full_node.links:
+                if link not in groups_with_links[group_key]:
+                    groups_with_links[group_key].append(full_node.links)
 
-        component.links = component_links
-    return linked_components
+    return groups_with_links
+
+
+def get_linked_groups_from_ids(
+        pages: Dict[str, Page],
+        partition: Dict[str, int]
+) -> List[Group]:
+    meta_groups = []
+    groups_with_links = get_links_of_groups(pages, partition)
+    for group_id in groups_with_links:
+        group_links = []
+        visited_links = []
+        links = groups_with_links[group_id]
+        if links is not None:
+            for link in links:
+                link_to_group = partition.get(link)
+                # TODO: if there is no node for the link create a new group with default values
+                if link_to_group is not None and link_to_group not in visited_links:
+                    visited_links.add(link_to_group)
+                    group_links.append(Link(link=link_to_group))
+
+        meta_group = MetaGroup(id=group_id.id, links=group_links, members_count=group_id.members.count())
+        meta_groups.append(meta_group)
+
+    return meta_groups
 
 
 def find_strong_components(vertices: Dict[int, List[int]]) -> Dict[int, List[int]]:
@@ -201,12 +212,28 @@ def find_strong_components(vertices: Dict[int, List[int]]) -> Dict[int, List[int
     return components
 
 
-def get_linked_components(pages: Dict[str, Page]) -> List[Component]:
+def get_linked_groups(pages: Dict[str, Page]) -> List[Group]:
+    graph = nx.Graph()
+
     table_to_alias, table_to_original = create_hash_tables(pages)
-    vertices = get_page_aliases(pages, table_to_alias)
+    vertex_aliases = get_node_aliases(pages, table_to_alias)
+    graph_edges = get_edges(vertex_aliases)
 
-    strong_components = find_strong_components(vertices)
-    page_originals = get_page_originals(strong_components, table_to_original)
-    linked_components = get_linked_components_from_ids(pages, page_originals)
+    graph.add_nodes_from(table_to_original.keys())
+    graph.add_edges_from(graph_edges)
 
-    return linked_components
+    partition = cylouvain.best_partition(graph)
+    page_originals = get_original_node_key_group_pairs(partition, table_to_original)
+    linked_groups = get_linked_groups_from_ids(pages, page_originals)
+
+    return linked_groups
+
+
+def get_edges(pages_aliases: Dict[int, List[int]]) -> List[Tuple[int, int]]:
+    edges = []
+
+    for page_alias in pages_aliases:
+        for destination in pages_aliases[page_alias]:
+            edges.append((page_alias, destination))
+
+    return edges
