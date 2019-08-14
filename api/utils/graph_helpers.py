@@ -1,8 +1,9 @@
 from collections import defaultdict
 from api.models import Group, Link, MetaGroup, Page
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 import cylouvain
 import networkx as nx
+
 
 def create_hash_tables(pages: Dict[str, Page]) -> Tuple[Dict[str, int], Dict[int, str]]:
     index = 0
@@ -67,63 +68,6 @@ def get_original_node_key_group_pairs(
     return original_node_key_group_pairs
 
 
-def strong_connect(
-        time: int,
-        graph: Dict[int, List[int]],
-        node: int,
-        is_stack_member_collection: List[bool],
-        earliest_reachable_node: List[int],
-        discovery_time: List[int],
-        visited_stack: List[int],
-        components: Dict[int, List[int]],
-) -> Tuple[int, Dict[int, List[int]]]:
-    # Initialize discovery time and low value
-    discovery_time[node] = time
-    earliest_reachable_node[node] = time
-    time += 1
-    is_stack_member_collection[node] = True
-    visited_stack.append(node)
-
-    # Go through all vertices adjacent to this one
-    for vertex in graph[node]:
-        # If v is not visited yet, then recur for it
-        if discovery_time[vertex] == -1:
-            strong_connect(
-                time,
-                graph,
-                vertex,
-                is_stack_member_collection,
-                earliest_reachable_node,
-                discovery_time,
-                visited_stack,
-                components,
-            )
-
-            # Check if the subtree rooted with v has a connection to
-            # the one of the ancestors of u
-            # Case 1 (per above discussion on Disc and Low value)
-            earliest_reachable_node[node] = min(earliest_reachable_node[node], earliest_reachable_node[vertex])
-
-        elif is_stack_member_collection[vertex]:
-            '''Update low value of 'u' only if 'v' is still in stack
-            (i.e. it's a back edge, not cross edge).
-            Case 2 (per above discussion on Disc and Low value) '''
-            earliest_reachable_node[node] = min(earliest_reachable_node[node], discovery_time[vertex])
-
-            # head node found, pop the stack
-    w = -1  # To store stack extracted vertices
-    if earliest_reachable_node[node] == discovery_time[node]:
-        while w != node:
-            w = visited_stack.pop()
-            components[node].append(w)
-            is_stack_member_collection[w] = False
-
-    return (
-        time,
-        components,
-    )
-
-
 def get_links_of_groups(
         pages: Dict[str, Page],
         reversed_partition: Dict[int, List[str]]
@@ -150,31 +94,15 @@ def reverse_partition(
     return groups_with_nodes
 
 
-def filter_orphaned_nodes(
-    reversed_partition: Dict[int, List[str]],
-    groups_with_links: Dict[int, List[str]],
-) -> List[int]:
-    relevant_groups = []
-
-    for group_key, nodes in reversed_partition.items():
-        linked_group = groups_with_links[group_key]
-        if len(nodes) > 1 and linked_group:
-            relevant_groups.append(group_key)
-
-    return relevant_groups
-
-
 def get_linked_meta_groups_from_ids(
         pages: Dict[str, Page],
         partition: Dict[str, int]
 ) -> List[MetaGroup]:
-    meta_groups = []
     reversed_partition = reverse_partition(partition)
     groups_with_links = get_links_of_groups(pages, reversed_partition)
+    meta_groups = []
 
-    relevant_groups = filter_orphaned_nodes(reversed_partition, groups_with_links)
-
-    for group_id in relevant_groups:
+    for group_id in groups_with_links:
         group_links = []
         links = groups_with_links[group_id]
         if links is not None:
@@ -190,38 +118,6 @@ def get_linked_meta_groups_from_ids(
     return meta_groups
 
 
-def find_strong_components(vertices: Dict[int, List[int]]) -> Dict[int, List[int]]:
-    # Mark all the vertices as not visited
-    # and Initialize parent and visited,
-    # and ap(articulation point) arrays
-    time = 0
-    components = defaultdict(list)
-
-    number_of_vertices = len(vertices)
-    discovery_time = [-1] * number_of_vertices
-    earliest_reachable_nodes = [-1] * number_of_vertices
-    is_stack_member = [False] * number_of_vertices
-    visited_stack = []
-
-    # Call the recursive helper function
-    # to find articulation points
-    # in DFS tree rooted with vertex 'i'
-    for vertex in range(number_of_vertices):
-        if discovery_time[vertex] == -1:
-            time, components = strong_connect(
-                time,
-                vertices,
-                vertex,
-                is_stack_member,
-                earliest_reachable_nodes,
-                discovery_time,
-                visited_stack,
-                components,
-            )
-
-    return components
-
-
 def get_linked_groups(pages: Dict[str, Page]) -> List[MetaGroup]:
     graph = nx.Graph()
 
@@ -232,11 +128,15 @@ def get_linked_groups(pages: Dict[str, Page]) -> List[MetaGroup]:
     graph.add_nodes_from(table_to_original.keys())
     graph.add_edges_from(graph_edges)
 
+    graph, isolates = filter_isolates(graph)
+
     partition = cylouvain.best_partition(graph)
     page_originals = get_original_node_key_group_pairs(partition, table_to_original)
     linked_groups = get_linked_meta_groups_from_ids(pages, page_originals)
 
-    return linked_groups
+    groups_and_isolates = insert_isolated_nodes_group(linked_groups, isolates)
+
+    return groups_and_isolates
 
 
 def get_edges(pages_aliases: Dict[int, List[int]]) -> List[Tuple[int, int]]:
@@ -247,3 +147,22 @@ def get_edges(pages_aliases: Dict[int, List[int]]) -> List[Tuple[int, int]]:
             edges.append((page_alias, destination))
 
     return edges
+
+
+def filter_isolates(
+        graph: Any
+) -> Tuple[Any, List[int]]:
+    isolates = list(nx.isolates(graph))
+    graph.remove_nodes_from(isolates)
+
+    return graph, isolates
+
+
+def insert_isolated_nodes_group(
+        linked_meta_groups: List[MetaGroup],
+        isolated_nodes: List[int]
+) -> List[MetaGroup]:
+    meta_group = MetaGroup(id=len(linked_meta_groups), members_count=len(isolated_nodes))
+    linked_meta_groups.append(meta_group)
+
+    return linked_meta_groups
