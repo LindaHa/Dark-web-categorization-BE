@@ -1,7 +1,10 @@
 from pip._vendor import requests
+
+from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
 from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
 from typing import Dict, Union
+import redis
 
 
 CHUNK_SIZE = 500
@@ -48,6 +51,10 @@ class ElasticSearchRepository(object):
             return None
 
     def fetch_all(self) -> Dict[str, Page]:
+        all_pages_cached = get_cached_all_pages()
+        if all_pages_cached:
+            return all_pages_cached
+
         payload = {
             "size": CHUNK_SIZE,
             "query": {
@@ -76,5 +83,10 @@ class ElasticSearchRepository(object):
 
                 print(i)
                 i += 1
+
+        for fp in final_pages:
+            final_pages[fp].content = ''
+
+        cache_all_pages(final_pages)
 
         return final_pages

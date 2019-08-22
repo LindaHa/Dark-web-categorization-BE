@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets
 
 from api.models import Page, Link
-from api.utils.graph_helpers import get_linked_groups
+from api.utils.graph_helpers.graph_helpers import get_linked_meta_groups
 from . import serializers
 from .repositories import ElasticSearchRepository
 
@@ -47,7 +47,7 @@ class PageViewSet(viewsets.ViewSet):
         else:
             response = self.el_repository.fetch_all()
 
-        result = get_linked_groups(response)
+        result = get_linked_meta_groups(response)
         if result is None:
             return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
         serializer = serializers.MetaGroupSerializer(
