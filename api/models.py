@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 
 class Link(object):
@@ -25,7 +25,7 @@ class Page(object):
 class Group(object):
     id: str
     links: List[Link]
-    members: List[Page]
+    members: Dict[str, Page]
 
     def __init__(self, **kwargs):
         for field in ("id", "links", "members"):

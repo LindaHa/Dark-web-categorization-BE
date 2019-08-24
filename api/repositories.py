@@ -4,7 +4,6 @@ from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
 from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
 from typing import Dict, Union
-import redis
 
 
 CHUNK_SIZE = 500

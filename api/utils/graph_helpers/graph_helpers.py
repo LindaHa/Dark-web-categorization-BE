@@ -1,38 +1,62 @@
 from collections import defaultdict
-from api.models import MetaGroup, Page
+from api.models import Group, Page
 from typing import Dict, List, Tuple
 import cylouvain
 import networkx as nx
-
+from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups
 from api.utils.graph_helpers.isolate_helpers import filter_isolates, insert_isolated_nodes_group
 from api.utils.graph_helpers.node_alias_helpers import create_hash_tables, get_node_aliases, \
     get_original_node_key_group_pairs
 from api.utils.graph_helpers.partition_helpers import reverse_partition
 
 
-def get_links_of_groups(
+def get_links_and_nodes_of_groups(
         pages: Dict[str, Page],
         reversed_partition: Dict[int, List[str]]
-) -> Dict[int, List[str]]:
+) -> Tuple[Dict[int, List[str]], Dict[int, List[Page]]]:
+    """
+    :param pages: the original pages from db
+    :type pages: Dict[str, Page]
+    :param reversed_partition: each partition key with all of its nodes as original page keys
+    :type reversed_partition: Dict[int, List[str]]
+    :return: links to other nodes and pages of a group
+    :rtype:  Tuple[Dict[int, List[str]], Dict[int, List[Page]]]
+    """
     groups_with_links = defaultdict(list)
-    for group_key, nodes in reversed_partition.items():
-        for node in nodes:
-            full_node = pages.get(node)
-            if full_node and full_node.links:
-                for link in full_node.links:
-                    if link.link not in groups_with_links[group_key]:
-                        groups_with_links[group_key].append(link.link)
+    nodes_of_groups = defaultdict(list)
+    for group_key, node_keys in reversed_partition.items():
+        for node_key in node_keys:
+            full_node = pages.get(node_key)
 
-    return groups_with_links
+            if full_node:
+                full_node.content = ''
+                nodes_of_groups[group_key].append(full_node)
+                if full_node.links:
+                    for link in full_node.links:
+                        if link.link not in groups_with_links[group_key]:
+                            groups_with_links[group_key].append(link.link)
+
+    return groups_with_links, nodes_of_groups
 
 
-def get_linked_meta_groups_from_ids(
+def get_linked_groups_from_ids(
         pages: Dict[str, Page],
-        partition: Dict[str, int]
-) -> List[MetaGroup]:
+        partition: Dict[str, int],
+        parent_group_id: str = None
+) -> List[Group]:
+    """
+    :param pages: the original pages from db
+    :type pages: Dict[str, Page]
+    :param partition: each page as the original page key with its respective group key
+    :type partition:Dict[str, int]
+    :param parent_group_id: the parent group key of which pages the subgroups will be created
+    :type parent_group_id: str or None
+    :return: a list of groups with links to original page keys
+    :rtype: List[Group]
+    """
     reversed_partition = reverse_partition(partition)
-    groups_with_links = get_links_of_groups(pages, reversed_partition)
-    meta_groups = []
+    groups_with_links, nodes_of_groups = get_links_and_nodes_of_groups(pages, reversed_partition)
+    groups = []
 
     for group_id in groups_with_links:
         group_links = []
@@ -44,16 +68,36 @@ def get_linked_meta_groups_from_ids(
                 if link_to_group is not None and link_to_group not in group_links and link_to_group != group_id:
                     group_links.append(link_to_group)
 
-        meta_group = MetaGroup(id=group_id, links=group_links, members_count=len(reversed_partition[group_id]))
-        meta_groups.append(meta_group)
+        parent_key_prefix = parent_group_id if parent_group_id else ""
+        whole_group_id = str(parent_key_prefix) + "." + str(group_id)
+        group_members = {(node.url, node) for node in nodes_of_groups.get(group_id)}
+        group = Group(
+            id=whole_group_id,
+            links=group_links,
+            members=group_members
+        )
+        groups.append(group)
 
-    return meta_groups
+    return groups
 
 
-def get_linked_meta_groups(pages: Dict[str, Page]) -> List[MetaGroup]:
+def get_groups_without_links_and_isolates(
+        pages: Dict[str, Page],
+        table_to_alias: Dict[str, int],
+        table_to_original: Dict[int, str]
+) -> Tuple[Dict[str, int], List[int]]:
+    """
+    :param table_to_alias: page key - alias pairs
+    :type table_to_alias: Dict[str, int],
+    :param table_to_original: page alias - page key pairs
+    :type table_to_original: Dict[str, int],
+    :param pages: the original pages from db
+    :type pages: Dict[str, Page]
+    :return: the original keys of pages with the respective group keys along with isolates if any
+    :rtype: Tuple[Dict[str, int], List[int]]
+    """
     graph = nx.Graph()
 
-    table_to_alias, table_to_original = create_hash_tables(pages)
     vertex_aliases = get_node_aliases(pages, table_to_alias)
     graph_edges = get_edges(vertex_aliases)
 
@@ -63,15 +107,56 @@ def get_linked_meta_groups(pages: Dict[str, Page]) -> List[MetaGroup]:
     graph, isolates = filter_isolates(graph)
 
     partition = cylouvain.best_partition(graph)
-    page_originals = get_original_node_key_group_pairs(partition, table_to_original)
-    linked_groups = get_linked_meta_groups_from_ids(pages, page_originals)
+    originals_page_group_pairs = get_original_node_key_group_pairs(partition, table_to_original)
 
-    groups_and_isolates = insert_isolated_nodes_group(linked_groups, isolates)
+    return originals_page_group_pairs, isolates
 
-    return groups_and_isolates
+
+def get_linked_groups(pages: Dict[str, Page]) -> List[Group]:
+    """
+    :param pages: the original pages from db
+    :type pages: Dict[str, Page]
+    :return: a list of groups with links to other groups with all isolates as a separate group
+    :rtype: List[Group]
+    """
+    groups_with_isolates_group = get_cached_all_groups()
+    if groups_with_isolates_group:
+        return groups_with_isolates_group
+
+    table_to_alias, table_to_original = create_hash_tables(pages)
+    page_originals, isolates = get_groups_without_links_and_isolates(pages, table_to_alias, table_to_original)
+    linked_groups = get_linked_groups_from_ids(pages, page_originals)
+
+    groups_with_isolates_group = insert_isolated_nodes_group(linked_groups, isolates, pages, table_to_original)
+
+    cache_all_groups(groups_with_isolates_group)
+
+    return groups_with_isolates_group
+
+
+def get_linked_subgroups_of_group(group_id: str, pages: Dict[str, Page]) -> List[Group]:
+    """
+    :param group_id: id of the group of which pages the subgroups will be created
+    :type group_id: str
+    :param pages: the original pages from db of the specified group
+    :type pages: Dict[str, Page]
+    :return: subgroups of with links to other subgroup
+    :rtype: List[Group]
+    """
+    table_to_alias, table_to_original = create_hash_tables(pages)
+    groups_no_links = get_groups_without_links_and_isolates(pages, table_to_alias, table_to_original)[0]
+    linked_subgroups = get_linked_groups_from_ids(pages, groups_no_links, group_id)
+
+    return linked_subgroups
 
 
 def get_edges(pages_aliases: Dict[int, List[int]]) -> List[Tuple[int, int]]:
+    """
+    :param pages_aliases: page aliases with their links as aliases
+    :type pages_aliases: Dict[int, List[int]]
+    :return: edges represented as source alias and target alias
+    :rtype: List[Tuple[int, int]]
+    """
     edges = []
 
     for page_alias in pages_aliases:

@@ -1,8 +1,9 @@
 from rest_framework.response import Response
 from rest_framework import viewsets
-
 from api.models import Page, Link
-from api.utils.graph_helpers.graph_helpers import get_linked_meta_groups
+from api.utils.convertors import convert_groups_to_meta_groups
+from api.utils.graph_helpers.graph_helpers import get_linked_groups
+from api.utils.graph_helpers.level_helpers import get_subgroups_of_group
 from . import serializers
 from .repositories import ElasticSearchRepository
 
@@ -40,19 +41,31 @@ class PageViewSet(viewsets.ViewSet):
     el_repository = ElasticSearchRepository()
 
     def list(self, request):
+        is_lowest_level = False
+
         if "url_filter" in request.query_params and request.query_params["url_filter"] != "":
             search_column = "content"
             search_phrase = request.query_params["url_filter"]
+
             response = self.el_repository.basic_search(search_column, search_phrase)
+            groups = get_linked_groups(response)
+            result = convert_groups_to_meta_groups(groups)
+
+        elif request.query_params and request.query_params["id"]:
+            group_id = request.query_params["id"]
+            groups = get_subgroups_of_group(group_id, self.el_repository)
+            result = convert_groups_to_meta_groups(groups)
+
         else:
             response = self.el_repository.fetch_all()
+            groups = get_linked_groups(response)
+            result = convert_groups_to_meta_groups(groups)
 
-        result = get_linked_meta_groups(response)
         if result is None:
             return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
         serializer = serializers.MetaGroupSerializer(
             instance=result, many=True)
         # serializer = serializers.PageSerializer(
         #     instance=pages.values(), many=True)
-        return Response({"result": True, "data": serializer.data, "lowestLevel": False})
+        return Response({"result": True, "data": serializer.data, "lowestLevel": is_lowest_level})
         # return Response({"result": True, "data": result})

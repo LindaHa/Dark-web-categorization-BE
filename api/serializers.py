@@ -35,7 +35,8 @@ class PageSerializer(serializers.Serializer):
             setattr(instance, field, value)
         return instance
 
-
+'''
+If needed, members needs to be reworked to dictionary
 class GroupSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
     links = LinkSerializer(many=True)
@@ -48,6 +49,7 @@ class GroupSerializer(serializers.Serializer):
         for field, value in validated_data.items():
             setattr(instance, field, value)
         return instance
+'''
 
 
 class MetaGroupSerializer(serializers.Serializer):
