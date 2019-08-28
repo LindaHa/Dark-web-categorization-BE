@@ -35,8 +35,8 @@ def get_subgroups_of_group(parent_group_id: str, el_repository: Any) -> List[Gro
     while unused_ids:
         unused_id = str(unused_ids.pop())
         # TODO text templating, this is ugly
-        next_id = ".".join(ids) + "." + unused_id
         ids.append(unused_id)
+        next_id = ".".join(ids)
 
         next_group = [group for group in subgroups if group.id == next_id][0]
         # TODO check if next_group is not null

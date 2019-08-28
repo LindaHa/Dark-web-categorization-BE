@@ -86,6 +86,60 @@ class ElasticSearchRepository(object):
         for fp in final_pages:
             final_pages[fp].content = ''
 
+        # final_pages = guarantee_pages_for_links(final_pages)
+        final_pages = removeLinksToNonScrapedPages(final_pages)
+
+        total = 0
+        total_starts_with = 0
+        for fpage in final_pages:
+            total += 1
+            if final_pages[fpage].url.startswith('http://2op42f4qv2reca5b.onion'):
+                total_starts_with += 1
+        print("There is {} pages total, from which {} start with 'http://2op42f4qv2reca5b.onion'"
+              .format(total, total_starts_with))
+
         cache_all_pages(final_pages)
 
         return final_pages
+
+
+def guarantee_pages_for_links(pages: Dict[str, Page]) -> Dict[str, Page]:
+    """
+    :param pages: Original pages from the database with possible links to non-existent pages
+    :type pages: Dict[Page]
+    :return: Pages with links to guaranteed pages
+    :rtype: Dict[Page]
+    """
+    guaranteed_pages = dict(pages)
+    for page_url, page in pages.items():
+        links = page.links
+        for link in links:
+            link_url = link.link
+            link_page = guaranteed_pages.get(link_url)
+            if not link_page:
+                link_page = Page(id=link_url, url=link_url)
+                guaranteed_pages[link_url] = link_page
+
+    return guaranteed_pages
+
+
+def removeLinksToNonScrapedPages(pages: Dict[str, Page]) -> Dict[str, Page]:
+    """
+    :param pages: Original pages from the database with possible links to non-existent pages
+    :type pages: Dict[Page]
+    :return: Pages with links that point only to existing pages
+    :rtype: Dict[Page]
+    """
+    total_valid_links = 0
+    total_links = 0
+    for page_url in pages:
+        page = pages[page_url]
+        total_links += len(page.links)
+        page.links = [link for link in page.links if link.link in pages]
+        if len(page.links) != 0:
+            links_count = len(page.links)
+            total_valid_links += links_count
+            print("found {} valid links".format(links_count))
+
+    print("There was total of {} links from which {} were valid".format(total_links, total_valid_links))
+    return pages

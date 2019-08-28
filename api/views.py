@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import viewsets
 from api.models import Page, Link
+from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups
 from api.utils.convertors import convert_groups_to_meta_groups
 from api.utils.graph_helpers.graph_helpers import get_linked_groups
 from api.utils.graph_helpers.level_helpers import get_subgroups_of_group
@@ -57,9 +58,14 @@ class PageViewSet(viewsets.ViewSet):
             result = convert_groups_to_meta_groups(groups)
 
         else:
-            response = self.el_repository.fetch_all()
-            groups = get_linked_groups(response)
-            result = convert_groups_to_meta_groups(groups)
+            groups_with_isolates_group = get_cached_all_groups()
+            if groups_with_isolates_group:
+                result = groups_with_isolates_group
+            else:
+                response = self.el_repository.fetch_all()
+                groups = get_linked_groups(response)
+                cache_all_groups(groups)
+                result = convert_groups_to_meta_groups(groups)
 
         if result is None:
             return Response({"result": False, "message": "Could not get response"}, content_type='application/json')

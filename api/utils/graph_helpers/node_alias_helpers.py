@@ -36,21 +36,17 @@ def get_node_aliases(
             continue
 
         links = page.links
-        # if not links:
         if not links and pairs[page_index] is None:
             pairs[page_index] = []
-        # else:
         elif links:
             for link in links:
                 link_original = link.link
                 link_index = table_to_alias.get(link_original)
-                # if link_index is None:
-                if link_index is None and pairs[page_index] is None:
+                if link_index is None:
                     pairs[page_index] = []
-                # else:
-                elif link_index is not None:
+                # TODO: should be set instead of list, but make it list before returning
+                else:
                     pairs[page_index].append(link_index)
-                    pairs[link_index].append(page_index)
     return pairs
 
 

@@ -1,13 +1,14 @@
 from collections import defaultdict
-from api.models import Group, Page
+from api.models import Group, Page, Link
 from typing import Dict, List, Tuple
 import cylouvain
 import networkx as nx
-from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups
 from api.utils.graph_helpers.isolate_helpers import filter_isolates, insert_isolated_nodes_group
 from api.utils.graph_helpers.node_alias_helpers import create_hash_tables, get_node_aliases, \
     get_original_node_key_group_pairs
 from api.utils.graph_helpers.partition_helpers import reverse_partition
+
+MAX_PARTITION_COUNT = 50
 
 
 def get_links_and_nodes_of_groups(
@@ -29,7 +30,6 @@ def get_links_and_nodes_of_groups(
             full_node = pages.get(node_key)
 
             if full_node:
-                full_node.content = ''
                 nodes_of_groups[group_key].append(full_node)
                 if full_node.links:
                     for link in full_node.links:
@@ -58,19 +58,19 @@ def get_linked_groups_from_ids(
     groups_with_links, nodes_of_groups = get_links_and_nodes_of_groups(pages, reversed_partition)
     groups = []
 
-    for group_id in groups_with_links:
+    for group_id in nodes_of_groups:
         group_links = []
         links = groups_with_links[group_id]
         if links is not None:
             for link in links:
                 link_to_group = partition.get(link)
-                # TODO: if there is no node for the link create a new group with default values
                 if link_to_group is not None and link_to_group not in group_links and link_to_group != group_id:
-                    group_links.append(link_to_group)
+                    new_link = Link(link=str(link_to_group))
+                    group_links.append(new_link)
 
-        parent_key_prefix = parent_group_id if parent_group_id else ""
-        whole_group_id = str(parent_key_prefix) + "." + str(group_id)
-        group_members = {(node.url, node) for node in nodes_of_groups.get(group_id)}
+        parent_key_prefix = parent_group_id + "." if parent_group_id else ""
+        whole_group_id = str(parent_key_prefix) + str(group_id)
+        group_members = {node.url: node for node in nodes_of_groups.get(group_id)}
         group = Group(
             id=whole_group_id,
             links=group_links,
@@ -119,17 +119,47 @@ def get_linked_groups(pages: Dict[str, Page]) -> List[Group]:
     :return: a list of groups with links to other groups with all isolates as a separate group
     :rtype: List[Group]
     """
-    groups_with_isolates_group = get_cached_all_groups()
-    if groups_with_isolates_group:
-        return groups_with_isolates_group
 
-    table_to_alias, table_to_original = create_hash_tables(pages)
-    page_originals, isolates = get_groups_without_links_and_isolates(pages, table_to_alias, table_to_original)
-    linked_groups = get_linked_groups_from_ids(pages, page_originals)
+    mined_data = dict(pages)
+    partition_count_last_run = -1
+    partition_count = MAX_PARTITION_COUNT + 1
+    group_id_to_pages = {}
+    number_of_runs = 0
+    isolates = []
+    original_table_to_alias, original_table_to_original_keys = create_hash_tables(mined_data)
+    while partition_count > MAX_PARTITION_COUNT and partition_count_last_run != partition_count:
+        number_of_runs += 1
+        partition_count_last_run = partition_count
+        table_to_alias, table_to_original = create_hash_tables(mined_data)
+        page_originals, isolates = get_groups_without_links_and_isolates(mined_data, table_to_alias, table_to_original)
+        linked_groups = get_linked_groups_from_ids(mined_data, page_originals)
 
-    groups_with_isolates_group = insert_isolated_nodes_group(linked_groups, isolates, pages, table_to_original)
+        new_mined_data = {}
+        partition_count = 0
+        new_group_id_to_pages = {}
+        for group in linked_groups:
+            partition_count += 1
+            new_mined_data[group.id] = Page(id=group.id, url=group.id, links=group.links)
+            new_group_id_to_pages[group.id] = []
+            for subgroup_id in group.members:
+                if subgroup_id in group_id_to_pages:
+                    new_group_id_to_pages[group.id] += group_id_to_pages[subgroup_id]
+                else:
+                    new_group_id_to_pages[group.id].append(group.members[subgroup_id])
 
-    cache_all_groups(groups_with_isolates_group)
+        group_id_to_pages = new_group_id_to_pages
+        mined_data = new_mined_data
+        print(len(linked_groups))
+
+    for group in linked_groups:
+        group.members = {x.url: x for x in group_id_to_pages[group.id]}
+
+    groups_with_isolates_group = insert_isolated_nodes_group(
+        linked_groups,
+        isolates if number_of_runs == 1 else [],
+        pages,
+        original_table_to_original_keys
+    )
 
     return groups_with_isolates_group
 
