@@ -46,7 +46,7 @@ def insert_isolated_nodes_group(
         group_members[original_key] = full_node
 
     if len(group_members) > 0:
-        group = Group(id=len(linked_groups), members=group_members)
+        group = Group(id=str(len(linked_groups)), members=group_members)
         linked_groups.append(group)
 
     return linked_groups

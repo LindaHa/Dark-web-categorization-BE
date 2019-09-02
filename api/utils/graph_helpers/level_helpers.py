@@ -1,7 +1,7 @@
 from typing import List, Any
 from api.models import Group
 from api.utils.caching_helpers import get_cached_group_subgroups, cache_groups_subgroups, get_cached_all_groups
-from api.utils.graph_helpers.graph_helpers import get_linked_subgroups_of_group, get_linked_groups
+from api.utils.graph_helpers.graph_helpers import get_linked_groups
 
 
 def get_subgroups_of_group(parent_group_id: str, el_repository: Any) -> List[Group]:
@@ -34,14 +34,13 @@ def get_subgroups_of_group(parent_group_id: str, el_repository: Any) -> List[Gro
 
     while unused_ids:
         unused_id = str(unused_ids.pop())
-        # TODO text templating, this is ugly
         ids.append(unused_id)
         next_id = ".".join(ids)
 
         next_group = [group for group in subgroups if group.id == next_id][0]
         # TODO check if next_group is not null
         pages = next_group.members
-        subgroups = get_linked_subgroups_of_group(next_id, pages)
+        subgroups = get_linked_groups(pages, next_id)
 
         cache_groups_subgroups(next_id, subgroups)
 

@@ -52,7 +52,7 @@ class PageViewSet(viewsets.ViewSet):
             groups = get_linked_groups(response)
             result = convert_groups_to_meta_groups(groups)
 
-        elif request.query_params and request.query_params["id"]:
+        elif "id" in request.query_params and request.query_params and request.query_params["id"]:
             group_id = request.query_params["id"]
             groups = get_subgroups_of_group(group_id, self.el_repository)
             result = convert_groups_to_meta_groups(groups)
@@ -60,7 +60,7 @@ class PageViewSet(viewsets.ViewSet):
         else:
             groups_with_isolates_group = get_cached_all_groups()
             if groups_with_isolates_group:
-                result = groups_with_isolates_group
+                result = convert_groups_to_meta_groups(groups_with_isolates_group)
             else:
                 response = self.el_repository.fetch_all()
                 groups = get_linked_groups(response)
@@ -73,5 +73,8 @@ class PageViewSet(viewsets.ViewSet):
             instance=result, many=True)
         # serializer = serializers.PageSerializer(
         #     instance=pages.values(), many=True)
-        return Response({"result": True, "data": serializer.data, "lowestLevel": is_lowest_level})
+        return Response(
+            {"result": True, "data": serializer.data, "lowestLevel": is_lowest_level},
+            content_type='application/json'
+        )
         # return Response({"result": True, "data": result})
