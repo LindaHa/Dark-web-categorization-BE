@@ -74,7 +74,6 @@ class PageViewSet(viewsets.ViewSet):
         # serializer = serializers.PageSerializer(
         #     instance=pages.values(), many=True)
         return Response(
-            {"result": True, "data": serializer.data, "lowestLevel": is_lowest_level},
-            content_type='application/json'
+            {"result": True, "data": serializer.data, "lowestLevel": is_lowest_level}
         )
         # return Response({"result": True, "data": result})

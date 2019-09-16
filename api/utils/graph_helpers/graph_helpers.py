@@ -106,9 +106,9 @@ def get_groups_without_links_and_isolates(
     graph.add_nodes_from(table_to_original.keys())
     graph.add_edges_from(graph_edges)
 
-    graph, isolates = filter_isolates(graph)
+    graph_no_isolates, isolates = filter_isolates(graph)
 
-    partition = cylouvain.best_partition(graph)
+    partition = cylouvain.best_partition(graph_no_isolates)
     originals_page_group_pairs = get_original_node_key_group_pairs(partition, table_to_original)
 
     return originals_page_group_pairs, isolates
@@ -158,7 +158,7 @@ def get_linked_groups(pages: Dict[str, Page], parent_group_id: str = None) -> Li
     for group in linked_groups:
         group.members = {x.url: x for x in group_id_to_pages[group.id]}
 
-    if not parent_group_id:
+    if parent_group_id is None:
         linked_groups = insert_isolated_nodes_group(
             linked_groups,
             isolates if number_of_runs == 1 else [],
@@ -195,7 +195,9 @@ def get_edges(pages_aliases: Dict[int, List[int]]) -> List[Tuple[int, int]]:
     edges = []
 
     for page_alias in pages_aliases:
-        for destination in pages_aliases[page_alias]:
-            edges.append((page_alias, destination))
+        destinations = pages_aliases[page_alias]
+        for destination in destinations:
+            if destination is not None:
+                edges.append((page_alias, destination))
 
     return edges
