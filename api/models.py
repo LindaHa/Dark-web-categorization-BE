@@ -32,11 +32,15 @@ class Group(object):
             setattr(self, field, kwargs.get(field, None))
 
 
+NUMBER_OF_FIRST_MEMBERS = 10
+
+
 class MetaGroup(object):
     id: str
     links: List[str]
+    first_members: List[Page]
     members_count: int
 
     def __init__(self, **kwargs):
-        for field in ("id", "links", "members_count"):
+        for field in ("id", "links", "first_members", "members_count"):
             setattr(self, field, kwargs.get(field, None))
