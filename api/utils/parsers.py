@@ -23,7 +23,7 @@ def get_pages_from_json(json) -> Dict[str, Page]:
     response_pages = get_hits(json)
     for page in response_pages:
         page_info = page.get("_source")
-        url = page_info.get("url")
+        url = page_info.get("raw_url")
         if url is not None:
             page_id = page.get("_id")
             title = page_info.get("title")
