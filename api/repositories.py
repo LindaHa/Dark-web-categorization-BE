@@ -87,13 +87,13 @@ class ElasticSearchRepository(object):
             final_pages[fp].content = ''
 
         # final_pages = guarantee_pages_for_links(final_pages)
-        final_pages = removeLinksToNonScrapedPages(final_pages)
+        final_pages = remove_links_to_non_scraped_pages(final_pages)
 
         total = 0
         total_starts_with = 0
-        for fpage in final_pages:
+        for f_page in final_pages:
             total += 1
-            if final_pages[fpage].url.startswith('http://2op42f4qv2reca5b.onion'):
+            if final_pages[f_page].url.startswith('http://2op42f4qv2reca5b.onion'):
                 total_starts_with += 1
         print("There is {} pages total, from which {} start with 'http://2op42f4qv2reca5b.onion'"
               .format(total, total_starts_with))
@@ -123,7 +123,7 @@ def guarantee_pages_for_links(pages: Dict[str, Page]) -> Dict[str, Page]:
     return guaranteed_pages
 
 
-def removeLinksToNonScrapedPages(pages: Dict[str, Page]) -> Dict[str, Page]:
+def remove_links_to_non_scraped_pages(pages: Dict[str, Page]) -> Dict[str, Page]:
     """
     :param pages: Original pages from the database with possible links to non-existent pages
     :type pages: Dict[Page]
@@ -132,6 +132,26 @@ def removeLinksToNonScrapedPages(pages: Dict[str, Page]) -> Dict[str, Page]:
     """
     total_valid_links = 0
     total_links = 0
+
+    domains = {}
+    link_domains = {}
+    all_links = {}
+    not_scraped_links = {}
+    for page_key in pages:
+        domain = page_key.split(".onion")[0]
+        page = pages[page_key]
+        for link_key in page.links:
+            link_key = link_key.link
+            link_domain = link_key.split(".onion")[0]
+            if link_key not in all_links:
+                all_links[link_key] = link_key
+            if link_domain not in link_domains:
+                link_domains[link_domain] = link_domain
+            if link_key not in pages and link_key not in not_scraped_links:
+                not_scraped_links[link_key] = link_key
+        if domain not in domains:
+            domains[domain] = domains
+
     for page_url in pages:
         page = pages[page_url]
         total_links += len(page.links)
@@ -142,4 +162,8 @@ def removeLinksToNonScrapedPages(pages: Dict[str, Page]) -> Dict[str, Page]:
             print("found {} valid links".format(links_count))
 
     print("There was total of {} links from which {} were valid".format(total_links, total_valid_links))
+    print("There are {} unique domains.".format(len(domains)))
+    print("There are {} unique link domains.".format(len(link_domains)))
+    print("There are {} unique links.".format(len(all_links)))
+    print("There are {} unique links which were not scraped.".format(len(not_scraped_links)))
     return pages
