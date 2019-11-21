@@ -30,7 +30,8 @@ def convert_groups_to_meta_groups(groups: List[Group]) -> List[MetaGroup]:
             id=group.id,
             links=simple_group_links,
             first_members=first_k_members,
-            members_count=len(group.members)
+            members_count=len(group.members),
+            categories=group.categories,
         )
         meta_groups.append(meta_group)
 

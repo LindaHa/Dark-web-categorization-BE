@@ -1,0 +1,17 @@
+labels_index = {
+    0: 'Finance and Fraud',
+    1: 'Other',
+    2: 'Porn',
+    3: 'Web Catalogue',
+    4: 'Social',
+    5: 'Hosting and Programming and Hacking',
+    6: 'Art',
+    7: 'Deviancy',
+    8: 'Online Marketplace',
+    9: 'Drugs',
+    10: 'Fake Identity and Hitmen',
+    11: 'Encyclopedia and Knowledge',
+    12: 'Gambling',
+    13: 'Financial Fraud',
+    14: 'Guns',
+}

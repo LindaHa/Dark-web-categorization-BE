@@ -1,4 +1,5 @@
-from api.models import Page, Link
+from api.categorization.categorizer import Categorizer
+from api.models import Page, Link, Category
 from typing import Dict, List
 
 
@@ -19,6 +20,7 @@ def taken_from_db(json) -> str:
 
 
 def get_pages_from_json(json) -> Dict[str, Page]:
+    categorizer = Categorizer()
     pages_to_return = {}
     response_pages = get_hits(json)
     for page in response_pages:
@@ -30,7 +32,19 @@ def get_pages_from_json(json) -> Dict[str, Page]:
             response_links = page_info.get("links")
             links = get_links_from_json(response_links)
             content = page_info.get("content")
-            pages_to_return[url] = Page(id=page_id, url=url, title=title, links=links, content=content)
+            category_name = categorizer.categorize(content)
+            category = Category(
+                    name=category_name,
+                    occurrence=1,
+            )
+            pages_to_return[url] = Page(
+                id=page_id,
+                url=url,
+                title=title,
+                links=links,
+                content=content,
+                categories=[category]
+            )
         else:
             print("cannot find url for source: {}".format(page_info))
     return pages_to_return

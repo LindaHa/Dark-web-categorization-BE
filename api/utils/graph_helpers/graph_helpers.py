@@ -1,5 +1,5 @@
 from collections import defaultdict
-from api.models import Group, Page, Link
+from api.models import Group, Page, Link, Category
 from typing import Dict, List, Tuple
 import cylouvain
 import networkx as nx
@@ -73,10 +73,27 @@ def get_linked_groups_from_ids(
 
         whole_group_id = str(parent_key_prefix) + str(group_id)
         group_members = {node.url: node for node in nodes_of_groups.get(group_id)}
+        group_categories = {}
+        for node in nodes_of_groups.get(group_id):
+            for node_cat in node.categories:
+                if node_cat.name in group_categories:
+                    group_categories[node_cat.name] += node_cat.occurrence
+                else:
+                    group_categories[node_cat.name] = node_cat.occurrence
+
+        categories = []
+        for g_cat in group_categories:
+            category = Category(
+                name=g_cat,
+                occurrence=group_categories[g_cat]
+            )
+            categories.append(category)
+
         group = Group(
             id=whole_group_id,
             links=group_links,
-            members=group_members
+            members=group_members,
+            categories=categories
         )
         groups.append(group)
 
@@ -144,7 +161,7 @@ def get_linked_groups(pages: Dict[str, Page], parent_group_id: str = None) -> Li
         new_group_ids_with_pages = {}
         for group in linked_groups:
             partition_count += 1
-            new_mined_data[group.id] = Page(id=group.id, url=group.id, links=group.links)
+            new_mined_data[group.id] = Page(id=group.id, url=group.id, links=group.links, categories=group.categories)
             new_group_ids_with_pages[group.id] = []
             for subgroup_id in group.members:
                 if subgroup_id in group_id_to_pages:
