@@ -31,10 +31,10 @@ def get_links_and_nodes_of_groups(
 
             if full_node:
                 nodes_of_groups[group_key].append(full_node)
-                if full_node.links:
-                    for link in full_node.links:
-                        if link.link not in groups_with_links[group_key]:
-                            groups_with_links[group_key].append(link.link)
+                links = set(full_node.links)
+                for link in links:
+                    if link.link not in groups_with_links[group_key]:
+                        groups_with_links[group_key].append(link.link)
 
     return groups_with_links, nodes_of_groups
 
