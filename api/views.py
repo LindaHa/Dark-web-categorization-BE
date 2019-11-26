@@ -4,6 +4,7 @@ from api.models import Page, Link
 from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups
 from api.utils.convertors import convert_groups_to_meta_groups
 from api.utils.graph_helpers.graph_helpers import get_linked_groups
+from api.utils.graph_helpers.group_by_helpers import divide_pages_by_category
 from api.utils.graph_helpers.level_helpers import get_subgroups_of_group
 from . import serializers
 from .repositories import ElasticSearchRepository
@@ -55,6 +56,15 @@ class PageViewSet(viewsets.ViewSet):
         elif "id" in request.query_params and request.query_params and request.query_params["id"]:
             group_id = request.query_params["id"]
             groups = get_subgroups_of_group(group_id, self.el_repository)
+            result = convert_groups_to_meta_groups(groups)
+
+        elif "group_by" in request.query_params and request.query_params and request.query_params["group_by"]:
+            group_by = request.query_params["group_by"]
+            pages = self.el_repository.fetch_all()
+            groups = []
+            if group_by == 'category':
+                groups = divide_pages_by_category(pages)
+
             result = convert_groups_to_meta_groups(groups)
 
         else:
