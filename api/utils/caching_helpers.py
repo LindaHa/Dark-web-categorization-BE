@@ -18,6 +18,7 @@ def redis_get_complex_object(redis_key: str) -> Any:
     return None
 
 
+# Returns all pages as individuals
 def get_cached_all_pages() -> Dict[str, Page]:
     return redis_get_complex_object('all_pages')
 
@@ -26,6 +27,7 @@ def cache_all_pages(pages: Dict[str, Page]) -> None:
     redis_cache_complex_object('all_pages', pages)
 
 
+# Returns Groups representing communities or sub-communities of communities of pages
 def get_cached_all_groups() -> List[Group]:
     return redis_get_complex_object('all_groups')
 
@@ -40,3 +42,12 @@ def get_cached_group_subgroups(group_id: str) -> Group:
 
 def cache_groups_subgroups(parent_group_id: str, groups: List[Group]) -> None:
     redis_cache_complex_object('groups_' + parent_group_id, groups)
+
+
+# Returns Groups created by dividing pages according to their category, the sub-groups are divided into communities
+def cache_all_groups_by_category(groups: List[Group]) -> None:
+    redis_cache_complex_object('all_groups_by_category', groups)
+
+
+def get_cached_all_groups_by_category() -> List[Group]:
+    return redis_get_complex_object('all_groups_by_category')

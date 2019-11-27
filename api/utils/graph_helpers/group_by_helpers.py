@@ -1,9 +1,13 @@
-import pprint
 from typing import Dict, List
-
+from enum import Enum
 from api.categorization.labels import labels_index
 from api.models import Page, Group, Category, Link
 from api.utils.graph_helpers.graph_helpers import get_linked_groups_from_ids
+
+
+class GroupByMode(Enum):
+    CATEGORY = 'category'
+    LINKS = 'links'
 
 
 def get_partition_by_category(pages: Dict[str, Page]) -> Dict[str, int]:

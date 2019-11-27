@@ -1,10 +1,11 @@
 from rest_framework.response import Response
 from rest_framework import viewsets
 from api.models import Page, Link
-from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups
+from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups, cache_all_groups_by_category, \
+    get_cached_all_groups_by_category
 from api.utils.convertors import convert_groups_to_meta_groups
 from api.utils.graph_helpers.graph_helpers import get_linked_groups
-from api.utils.graph_helpers.group_by_helpers import divide_pages_by_category
+from api.utils.graph_helpers.group_by_helpers import divide_pages_by_category, GroupByMode
 from api.utils.graph_helpers.level_helpers import get_subgroups_of_group
 from . import serializers
 from .repositories import ElasticSearchRepository
@@ -55,7 +56,8 @@ class PageViewSet(viewsets.ViewSet):
 
         elif "id" in request.query_params and request.query_params and request.query_params["id"]:
             group_id = request.query_params["id"]
-            groups = get_subgroups_of_group(group_id, self.el_repository)
+            mode = GroupByMode.LINKS if group_id[:1].isdigit() else GroupByMode.CATEGORY
+            groups = get_subgroups_of_group(group_id, self.el_repository, mode)
             result = convert_groups_to_meta_groups(groups)
 
         elif "group_by" in request.query_params and request.query_params and request.query_params["group_by"]:
@@ -63,27 +65,26 @@ class PageViewSet(viewsets.ViewSet):
             pages = self.el_repository.fetch_all()
             groups = []
             if group_by == 'category':
-                groups = divide_pages_by_category(pages)
+                groups = get_cached_all_groups_by_category()
+
+                if not groups:
+                    groups = divide_pages_by_category(pages)
+                    cache_all_groups_by_category(groups)
 
             result = convert_groups_to_meta_groups(groups)
 
         else:
-            groups_with_isolates_group = get_cached_all_groups()
-            if groups_with_isolates_group:
-                result = convert_groups_to_meta_groups(groups_with_isolates_group)
-            else:
+            groups = get_cached_all_groups()
+            if not groups:
                 response = self.el_repository.fetch_all()
                 groups = get_linked_groups(response)
                 cache_all_groups(groups)
-                result = convert_groups_to_meta_groups(groups)
+            result = convert_groups_to_meta_groups(groups)
 
         if result is None:
             return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
         serializer = serializers.MetaGroupSerializer(
             instance=result, many=True)
-        # serializer = serializers.PageSerializer(
-        #     instance=pages.values(), many=True)
         return Response(
-            {"result": True, "data": serializer.data, "lowestLevel": is_lowest_level}
+            {"result": True, "data": serializer.data}
         )
-        # return Response({"result": True, "data": result})
