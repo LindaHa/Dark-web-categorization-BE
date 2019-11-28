@@ -6,7 +6,7 @@ from api.utils.graph_helpers.graph_helpers import get_linked_groups
 from api.utils.graph_helpers.group_by_helpers import GroupByMode, divide_pages_by_category
 
 
-def get_zero_lvl_groups(el_repository: Any, group_by_mode: str) -> List[Group]:
+def get_zero_lvl_groups(el_repository: Any, group_by_mode: GroupByMode) -> List[Group]:
     """
     :param el_repository: the repository for fetching all pages
     :type el_repository: Any
@@ -16,7 +16,7 @@ def get_zero_lvl_groups(el_repository: Any, group_by_mode: str) -> List[Group]:
     :rtype: List[Group]
     """
     subgroups = []
-    if group_by_mode == GroupByMode.LINKS:
+    if group_by_mode == GroupByMode.LINK:
         zero_lvl_groups = get_cached_all_groups()
         if zero_lvl_groups:
             subgroups = zero_lvl_groups
@@ -35,7 +35,7 @@ def get_zero_lvl_groups(el_repository: Any, group_by_mode: str) -> List[Group]:
     return subgroups
 
 
-def get_subgroups_of_group(parent_group_id: str, el_repository: Any, group_by_mode: str) -> List[Group]:
+def get_subgroups_of_group(parent_group_id: str, el_repository: Any, group_by_mode: GroupByMode) -> List[Group]:
     """
     :param el_repository: the repository for fetching all pages
     :type el_repository: Any

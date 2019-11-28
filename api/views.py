@@ -38,14 +38,11 @@ pages = {
 }
 
 
-class PageViewSet(viewsets.ViewSet):
+class GroupsByLinkViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
-    serializer_class = serializers.PageSerializer
     el_repository = ElasticSearchRepository()
 
     def list(self, request):
-        is_lowest_level = False
-
         if "url_filter" in request.query_params and request.query_params["url_filter"] != "":
             search_column = "content"
             search_phrase = request.query_params["url_filter"]
@@ -56,21 +53,7 @@ class PageViewSet(viewsets.ViewSet):
 
         elif "id" in request.query_params and request.query_params and request.query_params["id"]:
             group_id = request.query_params["id"]
-            mode = GroupByMode.LINKS if group_id[:1].isdigit() else GroupByMode.CATEGORY
-            groups = get_subgroups_of_group(group_id, self.el_repository, mode)
-            result = convert_groups_to_meta_groups(groups)
-
-        elif "group_by" in request.query_params and request.query_params and request.query_params["group_by"]:
-            group_by = request.query_params["group_by"]
-            pages = self.el_repository.fetch_all()
-            groups = []
-            if group_by == 'category':
-                groups = get_cached_all_groups_by_category()
-
-                if not groups:
-                    groups = divide_pages_by_category(pages)
-                    cache_all_groups_by_category(groups)
-
+            groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.LINK)
             result = convert_groups_to_meta_groups(groups)
 
         else:
@@ -79,6 +62,43 @@ class PageViewSet(viewsets.ViewSet):
                 response = self.el_repository.fetch_all()
                 groups = get_linked_groups(response)
                 cache_all_groups(groups)
+            result = convert_groups_to_meta_groups(groups)
+
+        if result is None:
+            return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
+        serializer = serializers.MetaGroupSerializer(
+            instance=result, many=True)
+        return Response(
+            {"result": True, "data": serializer.data}
+        )
+
+
+class GroupsByCategoryViewSet(viewsets.ViewSet):
+    # Required for the Browsable API renderer to have a nice form.
+    el_repository = ElasticSearchRepository()
+
+    def list(self, request):
+        if "url_filter" in request.query_params and request.query_params["url_filter"] != "":
+            search_column = "content"
+            search_phrase = request.query_params["url_filter"]
+
+            response = self.el_repository.basic_search(search_column, search_phrase)
+            groups = get_linked_groups(response)
+            result = convert_groups_to_meta_groups(groups)
+
+        elif "id" in request.query_params and request.query_params and request.query_params["id"]:
+            group_id = request.query_params["id"]
+            groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.CATEGORY)
+            result = convert_groups_to_meta_groups(groups)
+
+        else:
+            pages = self.el_repository.fetch_all()
+            groups = get_cached_all_groups_by_category()
+
+            if not groups:
+                groups = divide_pages_by_category(pages)
+                cache_all_groups_by_category(groups)
+
             result = convert_groups_to_meta_groups(groups)
 
         if result is None:
