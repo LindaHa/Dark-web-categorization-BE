@@ -1,16 +1,19 @@
+from typing import Dict
+
 from rest_framework.response import Response
 from rest_framework import viewsets
-from api.models import Page, Link
+from api.models import Page, Link, PageDetails
 from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups, cache_all_groups_by_category, \
     get_cached_all_groups_by_category
 from api.utils.convertors import convert_groups_to_meta_groups
 from api.utils.graph_helpers.graph_helpers import get_linked_groups
 from api.utils.graph_helpers.group_by_helpers import divide_pages_by_category, GroupByMode
-from api.utils.graph_helpers.level_helpers import get_subgroups_of_group
+from api.utils.graph_helpers.level_helpers import get_subgroups_of_group, get_group
+from api.utils.graph_helpers.details_helpers import get_group_details, get_page_details
 from . import serializers
 from .repositories import ElasticSearchRepository
 
-pages = {
+mock_pages = {
     "zero.onion": Page(id="zero.onion", url="zero.onion", title="zero", links=[Link(link="two.onion"), Link(link="three.onion")], content="zero"),
     "one.onion": Page(id="one.onion", url="one.onion", title="one", links=[Link(link="zero.onion")], content="one"),
     "two.onion": Page(id="two.onion", url="two.onion", title="two", links=[Link(link="one.onion")], content="two"),
@@ -38,12 +41,32 @@ pages = {
 }
 
 
+def are_params_present(my_params: [str], query_params: Dict[str, str]) -> bool:
+    """
+    :param my_params: the checked for parameters
+    :type my_params: List[str]
+    :param query_params: the given parameters
+    :type query_params: Dict[str, str]
+    :return: returns true if the parameters are all present, otherwise false
+    :rtype: bool
+    """
+    if not query_params:
+        return False
+
+    for param in my_params:
+        present = param in query_params and query_params[param]
+        if not present:
+            return False
+
+    return True
+
+
 class GroupsByLinkViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
     el_repository = ElasticSearchRepository()
 
     def list(self, request):
-        if "url_filter" in request.query_params and request.query_params["url_filter"] != "":
+        if are_params_present(["url_filter"], request.query_params):
             search_column = "content"
             search_phrase = request.query_params["url_filter"]
 
@@ -51,9 +74,9 @@ class GroupsByLinkViewSet(viewsets.ViewSet):
             groups = get_linked_groups(response)
             result = convert_groups_to_meta_groups(groups)
 
-        elif "id" in request.query_params and request.query_params and request.query_params["id"]:
+        elif are_params_present(["id"], request.query_params):
             group_id = request.query_params["id"]
-            groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.LINK)
+            groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.LINK.value)
             result = convert_groups_to_meta_groups(groups)
 
         else:
@@ -78,7 +101,7 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
     el_repository = ElasticSearchRepository()
 
     def list(self, request):
-        if "url_filter" in request.query_params and request.query_params["url_filter"] != "":
+        if are_params_present(["url_filter"], request.query_params):
             search_column = "content"
             search_phrase = request.query_params["url_filter"]
 
@@ -86,16 +109,16 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
             groups = get_linked_groups(response)
             result = convert_groups_to_meta_groups(groups)
 
-        elif "id" in request.query_params and request.query_params and request.query_params["id"]:
+        elif are_params_present(["id"], request.query_params):
             group_id = request.query_params["id"]
-            groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.CATEGORY)
+            groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.CATEGORY.value)
             result = convert_groups_to_meta_groups(groups)
 
         else:
-            pages = self.el_repository.fetch_all()
             groups = get_cached_all_groups_by_category()
 
             if not groups:
+                pages = self.el_repository.fetch_all()
                 groups = divide_pages_by_category(pages)
                 cache_all_groups_by_category(groups)
 
@@ -105,6 +128,54 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
             return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
         serializer = serializers.MetaGroupSerializer(
             instance=result, many=True)
+        return Response(
+            {"result": True, "data": serializer.data}
+        )
+
+
+class GroupDetailsViewSet(viewsets.ViewSet):
+    # Required for the Browsable API renderer to have a nice form.
+    el_repository = ElasticSearchRepository()
+
+    def list(self, request):
+        if are_params_present(["id", "groupby"], request.query_params):
+            group_id = request.query_params["id"]
+            group_by_mode = request.query_params["groupby"]
+            group = get_group(group_id, self.el_repository, group_by_mode)
+
+            result = get_group_details(group)
+        else:
+            result = None
+
+        if result is None:
+            return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
+        serializer = serializers.GroupDetailsSerializer(
+            instance=result, many=False)
+        return Response(
+            {"result": True, "data": serializer.data}
+        )
+
+
+class PageDetailsViewSet(viewsets.ViewSet):
+    # Required for the Browsable API renderer to have a nice form.
+    el_repository = ElasticSearchRepository()
+
+    def list(self, request):
+        if are_params_present(["id"], request.query_params):
+            page_id = request.query_params["id"]
+            pages = self.el_repository.fetch_all()
+            if not pages:
+                result = None
+            else:
+                page = pages[page_id]
+                result = get_page_details(page)
+        else:
+            result = None
+
+        if result is None:
+            return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
+        serializer = serializers.PageDetailsSerializer(
+            instance=result, many=False)
         return Response(
             {"result": True, "data": serializer.data}
         )

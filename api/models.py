@@ -56,3 +56,19 @@ class MetaGroup(object):
     def __init__(self, **kwargs):
         for field in ("id", "links", "first_members", "members_count", "categories"):
             setattr(self, field, kwargs.get(field, None))
+
+
+class GroupDetails(object):
+    members_urls: List[str]
+
+    def __init__(self, **kwargs):
+        for field in ["members_urls"]:
+            setattr(self, field, kwargs.get(field, None))
+
+
+class PageDetails(object):
+    links: List[str]
+
+    def __init__(self, **kwargs):
+        for field in ["links"]:
+            setattr(self, field, kwargs.get(field, None))
