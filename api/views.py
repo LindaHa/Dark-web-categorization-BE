@@ -137,7 +137,7 @@ class GroupDetailsViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
     el_repository = ElasticSearchRepository()
 
-    def list(self, request):
+    def create(self, request):
         if are_params_present(["id", "groupby"], request.query_params):
             group_id = request.query_params["id"]
             group_by_mode = request.query_params["groupby"]
