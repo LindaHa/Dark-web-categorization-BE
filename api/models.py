@@ -70,14 +70,6 @@ class PageDetails(object):
             setattr(self, field, kwargs.get(field, None))
 
 
-class GroupDetails(object):
-    members_details: List[PageDetails]
-
-    def __init__(self, **kwargs):
-        for field in ["members_details"]:
-            setattr(self, field, kwargs.get(field, None))
-
-
 class DetailsOptions(object):
     title: bool
     category: bool

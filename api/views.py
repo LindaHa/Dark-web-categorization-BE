@@ -155,8 +155,8 @@ class GroupDetailsViewSet(viewsets.ViewSet):
 
         if result is None:
             return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
-        serializer = serializers.GroupDetailsSerializer(
-            instance=result, many=False)
+        serializer = serializers.PageDetailsSerializer(
+            instance=result, many=True)
         return Response(
             {"result": True, "data": serializer.data}
         )
@@ -166,7 +166,7 @@ class PageDetailsViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
     el_repository = ElasticSearchRepository()
 
-    def list(self, request):
+    def create(self, request):
         if are_params_present(["id"], request.query_params):
             page_id = request.query_params["id"]
             pages = self.el_repository.fetch_all()

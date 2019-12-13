@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Page, Link, Category, GroupDetails, MetaGroup, PageDetails
+from .models import Page, Link, Category, MetaGroup, PageDetails
 
 
 class StringListField(serializers.ListField):
@@ -69,24 +69,12 @@ class MetaGroupSerializer(serializers.Serializer):
 class PageDetailsSerializer(serializers.Serializer):
     url = serializers.CharField()
     title = serializers.CharField()
-    category: serializers.CharField()
-    content: serializers.CharField()
+    category = serializers.CharField()
+    content = serializers.CharField()
     links = StringListField()
 
     def create(self, validated_data):
         return PageDetails(id=None, **validated_data)
-
-    def update(self, instance, validated_data):
-        for field, value in validated_data.items():
-            setattr(instance, field, value)
-        return instance
-
-
-class GroupDetailsSerializer(serializers.Serializer):
-    members_details = PageDetailsSerializer(many=True)
-
-    def create(self, validated_data):
-        return GroupDetails(id=None, **validated_data)
 
     def update(self, instance, validated_data):
         for field, value in validated_data.items():
