@@ -1,29 +1,42 @@
 from typing import List
-from api.models import Group, GroupDetails, PageDetails, Page
+from api.models import Group, GroupDetails, PageDetails, Page, DetailsOptions
 
 
-def get_member_urls_for_group(group: Group) -> List[str]:
+def get_member_details_for_group(group: Group, options: DetailsOptions) -> List[GroupDetails]:
     """
+    :param options: information of which details are to be returned
+    :type options: DetailsOptions
     :param group: the group whose members' urls are desired
     :type group: Group
     :return: a list of urls of all members of the given group
     :rtype: List[str]
     """
-    urls = [url for url in group.members]
+    details = []
+    for url, member in group.members.items():
+        page_detail = PageDetails(url=url)
+        if options.category:
+            page_detail.category = member.categories[0].name
+        if options.title:
+            page_detail.title = member.title
+        if options.content:
+            page_detail.content = member.content
+        if options.links:
+            page_detail.links = member.links
+        details.append(page_detail)
 
-    return urls
+    return details
 
 
-def get_group_details(group: Group) -> GroupDetails:
+def get_group_details(group: Group, options: DetailsOptions) -> GroupDetails:
     """
     :param group: the group whose members' urls are desired
     :type group: Group
     :return: returns the group details of the given group
     :rtype: GroupDetails
     """
-    urls = get_member_urls_for_group(group)
+    details = get_member_details_for_group(group, options)
     group_details = GroupDetails(
-        members_urls=urls
+        members_details=details
     )
 
     return group_details

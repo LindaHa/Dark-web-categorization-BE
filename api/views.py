@@ -2,7 +2,7 @@ from typing import Dict
 
 from rest_framework.response import Response
 from rest_framework import viewsets
-from api.models import Page, Link, PageDetails
+from api.models import Page, Link,  DetailsOptions
 from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups, cache_all_groups_by_category, \
     get_cached_all_groups_by_category
 from api.utils.convertors import convert_groups_to_meta_groups
@@ -139,11 +139,17 @@ class GroupDetailsViewSet(viewsets.ViewSet):
 
     def create(self, request):
         if are_params_present(["id", "groupby"], request.query_params):
+            options = DetailsOptions(
+                title=request.data["title"],
+                category=request.data["category"],
+                content=request.data["content"],
+                links=request.data["links"],
+            )
             group_id = request.query_params["id"]
             group_by_mode = request.query_params["groupby"]
             group = get_group(group_id, self.el_repository, group_by_mode)
 
-            result = get_group_details(group)
+            result = get_group_details(group, options)
         else:
             result = None
 

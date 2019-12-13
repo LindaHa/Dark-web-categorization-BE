@@ -58,17 +58,32 @@ class MetaGroup(object):
             setattr(self, field, kwargs.get(field, None))
 
 
-class GroupDetails(object):
-    members_urls: List[str]
+class PageDetails(object):
+    url: str
+    title: str or None
+    category: str or None
+    content: str or None
+    links: List[str] or None
 
     def __init__(self, **kwargs):
-        for field in ["members_urls"]:
+        for field in ("url", "title", "category", "content", "links"):
             setattr(self, field, kwargs.get(field, None))
 
 
-class PageDetails(object):
-    links: List[str]
+class GroupDetails(object):
+    members_details: List[PageDetails]
 
     def __init__(self, **kwargs):
-        for field in ["links"]:
+        for field in ["members_details"]:
+            setattr(self, field, kwargs.get(field, None))
+
+
+class DetailsOptions(object):
+    title: bool
+    category: bool
+    content: bool
+    links: bool
+
+    def __init__(self, **kwargs):
+        for field in ("title", "category", "content", "links"):
             setattr(self, field, kwargs.get(field, None))
