@@ -1,6 +1,7 @@
 from pip._vendor import requests
 
-from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
+from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages, cache_json_pages, \
+    get_cached_json_pages, cache_specific_content
 from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
 from typing import Dict, Union
@@ -45,6 +46,7 @@ class ElasticSearchRepository(object):
         }
         response = requests.post(self.server + "_search/scroll", json=payload)
         if response.status_code == 200:
+            cache_json_pages((str(response.text)))
             return response.json()
         else:
             return None
@@ -54,37 +56,45 @@ class ElasticSearchRepository(object):
         if all_pages_cached:
             return all_pages_cached
 
-        payload = {
-            "size": CHUNK_SIZE,
-            "query": {
-                "match_all": {}
-            }
-        }
+        json = get_cached_json_pages()
 
-        response = requests.post(self.end_point_url + "_search?scroll=1m", json=payload)
-        final_pages = {}
-        if response.status_code == 200:
-            json = response.json()
-            scroll_id = get_scroll_id(json)
+        if json:
             final_pages = get_pages_from_json(json)
-            hits = get_hits(json)
-            i = 0
+        else:
+            final_pages = {}
+            payload = {
+                "size": CHUNK_SIZE,
+                "query": {
+                    "match_all": {}
+                }
+            }
 
-            while hits:
-                chunk_json = self.fetch_chunk(scroll_id)
+            response = requests.post(self.end_point_url + "_search?scroll=1m", json=payload)
+            if response.status_code == 200:
+                json = response.json()
+                scroll_id = get_scroll_id(json)
+                final_pages = get_pages_from_json(json)
+                hits = get_hits(json)
+                i = 0
+                text = str(response.text)
+                cache_json_pages(text)
 
-                scroll_id = get_scroll_id(chunk_json)
-                hits = get_hits(chunk_json)
-                pages = get_pages_from_json(chunk_json)
+                while hits:
+                    chunk_json = self.fetch_chunk(scroll_id)
 
-                if pages:
-                    final_pages.update(pages)
+                    scroll_id = get_scroll_id(chunk_json)
+                    hits = get_hits(chunk_json)
+                    pages = get_pages_from_json(chunk_json)
 
-                print(i)
-                i += 1
+                    if pages:
+                        final_pages.update(pages)
 
-        for fp in final_pages:
-            final_pages[fp].content = ''
+                    print(i)
+                    i += 1
+
+        for url, page in final_pages.items():
+            cache_specific_content(url, page.content)
+            page.content = ''
 
         # final_pages = guarantee_pages_for_links(final_pages)
         final_pages = remove_links_to_non_scraped_pages(final_pages)

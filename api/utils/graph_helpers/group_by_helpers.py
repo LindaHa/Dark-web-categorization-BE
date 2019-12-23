@@ -51,7 +51,7 @@ def divide_pages_by_category(pages: Dict[str, Page]) -> List[Group]:
     """
     partition = get_partition_by_category(pages)
     groups = get_linked_groups_from_ids(pages, partition)
-    converted_linked_groups = convert_link_aliases_to_keys(groups, partition)
+    converted_linked_groups = convert_link_aliases_to_keys(groups)
     renamed_groups = name_by_category(converted_linked_groups)
 
     return renamed_groups

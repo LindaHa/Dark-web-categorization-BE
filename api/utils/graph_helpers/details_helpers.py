@@ -1,5 +1,6 @@
 from typing import List
 from api.models import Group, PageDetails, Page, DetailsOptions
+from api.utils.caching_helpers import get_cached_specific_content
 
 
 def get_group_details(group: Group, options: DetailsOptions) -> List[PageDetails]:
@@ -19,7 +20,7 @@ def get_group_details(group: Group, options: DetailsOptions) -> List[PageDetails
         if options.title:
             page_detail.title = member.title
         if options.content:
-            page_detail.content = member.content
+            page_detail.content = get_content(member.url)
         if options.links:
             page_detail.links = member.links
         details.append(page_detail)
@@ -41,3 +42,17 @@ def get_page_details(page: Page) -> PageDetails:
     )
 
     return page_details
+
+
+def get_content(url: str) -> str:
+    """
+    :param url: the url of the page of which the content is desired
+    :type url: str
+    :return: the desired content if it exists
+    :rtype: str
+    """
+    content = get_cached_specific_content(url)
+    if content:
+        return content
+
+    return ''
