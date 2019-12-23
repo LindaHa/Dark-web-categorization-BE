@@ -26,9 +26,10 @@ class Page(object):
     title: str
     links: List[Link]
     categories: List[Category]
+    last_updated: str
 
     def __init__(self, **kwargs):
-        for field in ("id", "url", "content", "title", "links", "categories"):
+        for field in ("id", "url", "content", "title", "links", "categories", "last_updated"):
             setattr(self, field, kwargs.get(field, None))
 
 
@@ -63,10 +64,11 @@ class PageDetails(object):
     title: str or None
     category: str or None
     content: str or None
+    last_updated: str or None
     links: List[str] or None
 
     def __init__(self, **kwargs):
-        for field in ("url", "title", "category", "content", "links"):
+        for field in ("url", "title", "category", "content", "links", "last_updated"):
             setattr(self, field, kwargs.get(field, None))
 
 
@@ -74,8 +76,9 @@ class DetailsOptions(object):
     title: bool
     category: bool
     content: bool
+    last_updated: bool
     links: bool
 
     def __init__(self, **kwargs):
-        for field in ("title", "category", "content", "links"):
+        for field in ("title", "category", "content", "links", "last_updated"):
             setattr(self, field, kwargs.get(field, None))

@@ -71,6 +71,7 @@ class PageDetailsSerializer(serializers.Serializer):
     title = serializers.CharField()
     category = serializers.CharField()
     content = serializers.CharField()
+    last_updated = serializers.CharField()
     links = StringListField()
 
     def create(self, validated_data):

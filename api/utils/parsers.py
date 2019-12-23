@@ -30,6 +30,7 @@ def get_pages_from_json(json) -> Dict[str, Page]:
             page_id = page.get("_id")
             title = page_info.get("title")
             response_links = page_info.get("links")
+            last_updated = page_info.get("updated_on")
             links = get_links_from_json(response_links)
             content = page_info.get("content")
             category_name = categorizer.categorize(content)
@@ -41,6 +42,7 @@ def get_pages_from_json(json) -> Dict[str, Page]:
                 id=page_id,
                 url=url,
                 title=title,
+                last_updated=last_updated,
                 links=links,
                 content=content,
                 categories=[category]

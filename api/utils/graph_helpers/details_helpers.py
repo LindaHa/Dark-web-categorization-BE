@@ -21,6 +21,8 @@ def get_group_details(group: Group, options: DetailsOptions) -> List[PageDetails
             page_detail.title = member.title
         if options.content:
             page_detail.content = get_content(member.url)
+        if options.last_updated:
+            page_detail.last_updated = member.last_updated
         if options.links:
             page_detail.links = member.links
         details.append(page_detail)
