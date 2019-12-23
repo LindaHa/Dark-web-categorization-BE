@@ -56,41 +56,34 @@ class ElasticSearchRepository(object):
         if all_pages_cached:
             return all_pages_cached
 
-        json = get_cached_json_pages()
-
-        if json:
-            final_pages = get_pages_from_json(json)
-        else:
-            final_pages = {}
-            payload = {
-                "size": CHUNK_SIZE,
-                "query": {
-                    "match_all": {}
-                }
+        final_pages = {}
+        payload = {
+            "size": CHUNK_SIZE,
+            "query": {
+                "match_all": {}
             }
+        }
 
-            response = requests.post(self.end_point_url + "_search?scroll=1m", json=payload)
-            if response.status_code == 200:
-                json = response.json()
-                scroll_id = get_scroll_id(json)
-                final_pages = get_pages_from_json(json)
-                hits = get_hits(json)
-                i = 0
-                text = str(response.text)
-                cache_json_pages(text)
+        response = requests.post(self.end_point_url + "_search?scroll=1m", json=payload)
+        if response.status_code == 200:
+            json = response.json()
+            scroll_id = get_scroll_id(json)
+            final_pages = get_pages_from_json(json)
+            hits = get_hits(json)
+            i = 0
 
-                while hits:
-                    chunk_json = self.fetch_chunk(scroll_id)
+            while hits:
+                chunk_json = self.fetch_chunk(scroll_id)
 
-                    scroll_id = get_scroll_id(chunk_json)
-                    hits = get_hits(chunk_json)
-                    pages = get_pages_from_json(chunk_json)
+                scroll_id = get_scroll_id(chunk_json)
+                hits = get_hits(chunk_json)
+                pages = get_pages_from_json(chunk_json)
 
-                    if pages:
-                        final_pages.update(pages)
+                if pages:
+                    final_pages.update(pages)
 
-                    print(i)
-                    i += 1
+                print(i)
+                i += 1
 
         for url, page in final_pages.items():
             cache_specific_content(url, page.content)
