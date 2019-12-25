@@ -3,6 +3,8 @@ import shelve
 from pip._vendor import requests
 
 from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
+from api.utils.graph_helpers.shelving_helpers import page_shelf_name, page_shelf_key_prefix, page_shelf_batch_count, \
+    get_shelved_pages
 from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
 from typing import Dict, Union
@@ -56,17 +58,7 @@ class ElasticSearchRepository(object):
         if all_pages_cached:
             return all_pages_cached
 
-        shelved_pages = shelve.open('backup_db_response')
-        final_pages = {}
-
-        if 'backed_up' in shelved_pages:
-            number_of_batches = shelved_pages['backed_up']
-            while number_of_batches > 0:
-                print(number_of_batches)
-                new_batch = shelved_pages['pages_batch_' + str(number_of_batches - 1)]
-                final_pages.update(new_batch)
-                number_of_batches -= 1
-
+        final_pages = get_shelved_pages()
         if not final_pages:
             payload = {
                 "size": CHUNK_SIZE,
@@ -82,7 +74,8 @@ class ElasticSearchRepository(object):
                 scroll_id = get_scroll_id(json)
                 final_pages = get_pages_from_json(json)
                 hits = get_hits(json)
-                shelved_pages['pages_batch_' + str(i)] = final_pages
+                shelved_pages = shelve.open(page_shelf_name)
+                shelved_pages[page_shelf_key_prefix + str(i)] = final_pages
 
                 while hits:
                     i += 1
@@ -93,19 +86,16 @@ class ElasticSearchRepository(object):
                     pages = get_pages_from_json(chunk_json)
 
                     if pages:
-                        shelved_pages['pages_batch_' + str(i)] = pages
+                        shelved_pages[page_shelf_key_prefix + str(i)] = pages
                         final_pages.update(pages)
 
                     print(i)
-            shelved_pages['backed_up'] = i
+                shelved_pages[page_shelf_batch_count] = i
+                shelved_pages.close()
 
-            shelved_content = shelve.open('shelved_content')
             for url, page in final_pages.items():
-                shelved_content[url] = page.content
                 page.content = ''
-            shelved_content.close()
 
-        shelved_pages.close()
         # final_pages = guarantee_pages_for_links(final_pages)
         final_pages = remove_links_to_non_scraped_pages(final_pages)
 

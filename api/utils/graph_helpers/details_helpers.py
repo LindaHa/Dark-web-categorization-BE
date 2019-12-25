@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Dict
 from api.models import Group, PageDetails, Page, DetailsOptions
-from api.utils.caching_helpers import get_cached_specific_content
+from api.utils.graph_helpers.shelving_helpers import get_shelved_pages
 
 
 def get_group_details(group: Group, options: DetailsOptions) -> List[PageDetails]:
@@ -13,6 +13,10 @@ def get_group_details(group: Group, options: DetailsOptions) -> List[PageDetails
     :rtype: List[PageDetails]
     """
     details = []
+    shelved_pages = {}
+    if options.content:
+        shelved_pages = get_shelved_pages()
+
     for url, member in group.members.items():
         page_detail = PageDetails(url=url)
         if options.category:
@@ -20,7 +24,7 @@ def get_group_details(group: Group, options: DetailsOptions) -> List[PageDetails
         if options.title:
             page_detail.title = member.title
         if options.content:
-            page_detail.content = get_content(member.url)
+            page_detail.content = get_content(full_pages=shelved_pages, url=member.url)
         if options.last_updated:
             page_detail.last_updated = member.last_updated
         if options.links:
@@ -46,15 +50,17 @@ def get_page_details(page: Page) -> PageDetails:
     return page_details
 
 
-def get_content(url: str) -> str:
+def get_content(full_pages: Dict[str, Page], url: str) -> str:
     """
-    :param url: the url of the page of which the content is desired
+    :param full_pages: whole pages with content
+    :type full_pages: Dict[str, Page]
+    :param url: the url of the page with the desired content
     :type url: str
     :return: the desired content if it exists
     :rtype: str
     """
-    content = get_cached_specific_content(url)
-    if content:
-        return content
+    if url in full_pages:
+        page = full_pages[url]
+        return page.content
 
     return ''

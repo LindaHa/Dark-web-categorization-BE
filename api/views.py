@@ -149,7 +149,7 @@ class GroupDetailsViewSet(viewsets.ViewSet):
             group_by_mode = request.query_params["groupby"]
             group = get_group(group_id, self.el_repository, group_by_mode)
 
-            result = get_group_details(group, options)
+            result = get_group_details(group=group, options=options)
         else:
             result = None
 
