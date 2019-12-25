@@ -123,6 +123,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+#backups
+backup_db_response*
+
 .idea/*
 !.idea/codeStyleSettings.xml
 !.idea/codeStyles
