@@ -42,11 +42,13 @@ def cache_all_pages(pages: Dict[str, Page]) -> None:
 
 # Content for a specific page
 def get_cached_specific_content(url: str) -> str:
-    return redis_get_complex_object('specific_content_' + url)
+    r = redis.Redis()
+    return r.get('specific_content_' + url)
 
 
 def cache_specific_content(url: str, content: str) -> None:
-    redis_cache_complex_object('specific_content_' + url, content)
+    r = redis.Redis()
+    r.set('specific_content_' + url, content)
 
 
 # Groups representing communities or sub-communities of communities of pages

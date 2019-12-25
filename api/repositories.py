@@ -1,7 +1,8 @@
+import shelve
+
 from pip._vendor import requests
 
-from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages, cache_json_pages, \
-    get_cached_json_pages, cache_specific_content
+from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
 from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
 from typing import Dict, Union
@@ -46,7 +47,6 @@ class ElasticSearchRepository(object):
         }
         response = requests.post(self.server + "_search/scroll", json=payload)
         if response.status_code == 200:
-            cache_json_pages((str(response.text)))
             return response.json()
         else:
             return None
@@ -56,50 +56,58 @@ class ElasticSearchRepository(object):
         if all_pages_cached:
             return all_pages_cached
 
+        shelved_pages = shelve.open('backup_db_response')
         final_pages = {}
-        payload = {
-            "size": CHUNK_SIZE,
-            "query": {
-                "match_all": {}
+
+        if 'backed_up' in shelved_pages:
+            number_of_batches = shelved_pages['backed_up']
+            while number_of_batches > 0:
+                print(number_of_batches)
+                new_batch = shelved_pages['pages_batch_' + str(number_of_batches - 1)]
+                final_pages.update(new_batch)
+                number_of_batches -= 1
+
+        if not final_pages:
+            payload = {
+                "size": CHUNK_SIZE,
+                "query": {
+                    "match_all": {}
+                }
             }
-        }
 
-        response = requests.post(self.end_point_url + "_search?scroll=1m", json=payload)
-        if response.status_code == 200:
-            json = response.json()
-            scroll_id = get_scroll_id(json)
-            final_pages = get_pages_from_json(json)
-            hits = get_hits(json)
+            response = requests.post(self.end_point_url + "_search?scroll=1m", json=payload)
             i = 0
+            if response.status_code == 200:
+                json = response.json()
+                scroll_id = get_scroll_id(json)
+                final_pages = get_pages_from_json(json)
+                hits = get_hits(json)
+                shelved_pages['pages_batch_' + str(i)] = final_pages
 
-            while hits:
-                chunk_json = self.fetch_chunk(scroll_id)
+                while hits:
+                    i += 1
+                    chunk_json = self.fetch_chunk(scroll_id)
 
-                scroll_id = get_scroll_id(chunk_json)
-                hits = get_hits(chunk_json)
-                pages = get_pages_from_json(chunk_json)
+                    scroll_id = get_scroll_id(chunk_json)
+                    hits = get_hits(chunk_json)
+                    pages = get_pages_from_json(chunk_json)
 
-                if pages:
-                    final_pages.update(pages)
+                    if pages:
+                        shelved_pages['pages_batch_' + str(i)] = pages
+                        final_pages.update(pages)
 
-                print(i)
-                i += 1
+                    print(i)
+            shelved_pages['backed_up'] = i
 
-        for url, page in final_pages.items():
-            cache_specific_content(url, page.content)
-            page.content = ''
+            shelved_content = shelve.open('shelved_content')
+            for url, page in final_pages.items():
+                shelved_content[url] = page.content
+                page.content = ''
+            shelved_content.close()
 
+        shelved_pages.close()
         # final_pages = guarantee_pages_for_links(final_pages)
         final_pages = remove_links_to_non_scraped_pages(final_pages)
-
-        total = 0
-        total_starts_with = 0
-        for f_page in final_pages:
-            total += 1
-            if final_pages[f_page].url.startswith('http://2op42f4qv2reca5b.onion'):
-                total_starts_with += 1
-        print("There is {} pages total, from which {} start with 'http://2op42f4qv2reca5b.onion'"
-              .format(total, total_starts_with))
 
         cache_all_pages(final_pages)
 
