@@ -9,7 +9,6 @@ from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
 from typing import Dict, Union
 
-
 CHUNK_SIZE = 500
 
 
@@ -20,15 +19,22 @@ class ElasticSearchRepository(object):
 
     def basic_search(self, search_column, search_phrase) -> Union[Dict[str, Page], None]:
         payload = {
+            "size": 500,
             "query": {
-                # "multi_match": {
-                #     "query": search_phrase,
-                #     "fields": search_column
-                # },
                 "bool": {
-                    "must": [
+                    "must": [],
+                    "filter": [
                         {
-                            "match": {search_column: search_phrase}
+                            "bool": {
+                                "should": [
+                                    {
+                                        "match_phrase": {
+                                            search_column: search_phrase
+                                        }
+                                    }
+                                ],
+                                "minimum_should_match": 1
+                            }
                         }
                     ]
                 }
@@ -41,6 +47,30 @@ class ElasticSearchRepository(object):
             return pages
         else:
             return None
+
+    def get_one(self) -> Page:
+        payload = {
+            "size": 500,
+            "query": {
+                "bool": {
+                    "must": [],
+                    "filter": [
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "match_phrase": {
+                                            "url": "http://atlayofke5rqhsma.onion/index.php?link1=timeline&u=gffreezedrymachine&type=likes"
+                                        }
+                                    }
+                                ],
+                                "minimum_should_match": 1
+                            }
+                        }
+                    ]
+                }
+            }
+        }
 
     def fetch_chunk(self, scroll_id) -> Union[str, None]:
         payload = {

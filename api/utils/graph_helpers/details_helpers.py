@@ -7,47 +7,65 @@ def get_group_details(group: Group, options: DetailsOptions) -> List[PageDetails
     """
     :param options: information of which details are to be returned
     :type options: DetailsOptions
-    :param group: the group whose members' urls are desired
+    :param group: the group whose members' details are desired
     :type group: Group
+    :return: a list of details described in options of all members of the given group
+    :rtype: List[PageDetails]
+    """
+    details = get_pages_details(pages=group.members, options=options)
+    return details
+
+
+def get_pages_details(pages: Dict[str, Page], options: DetailsOptions, are_whole: bool = False) -> List[PageDetails]:
+    """
+    :param are_whole: a flag whether the received pages are whole (with content) or not
+    :type are_whole: bool
+    :param options: information of which details are to be returned
+    :type options: DetailsOptions
+    :param pages: pages whose details are desired
+    :type pages: Dict[str, Page]
     :return: a list of details described in options of all members of the given group
     :rtype: List[PageDetails]
     """
     details = []
     shelved_pages = {}
-    if options.content:
+    if options.content and not are_whole:
         shelved_pages = get_shelved_pages()
 
-    for url, member in group.members.items():
-        page_detail = PageDetails(url=url)
-        if options.category:
-            page_detail.category = member.categories[0].name
-        if options.title:
-            page_detail.title = member.title
-        if options.content:
-            page_detail.content = get_content(full_pages=shelved_pages, url=member.url)
-        if options.last_updated:
-            page_detail.last_updated = member.last_updated
-        if options.links:
-            page_detail.links = member.links
+    for url, page in pages.items():
+        page_detail = get_page_details(page=page, options=options, shelved_pages=shelved_pages)
         details.append(page_detail)
 
     return details
 
 
-def get_page_details(page: Page) -> PageDetails:
+def get_page_details(page: Page, options: DetailsOptions, shelved_pages: Dict[str, Page]) -> PageDetails:
     """
+    :param shelved_pages: whole pages (with content)
+    :type shelved_pages: Dict[str, Page]
+    :param options: information of which details are to be returned
+    :type options: DetailsOptions
     :param page: the page which details are desired
     :type page: Page
     :return: returns the details of the given page
     :rtype: PageDetails
     """
-    links = [link.link for link in page.links]
+    page_detail = PageDetails(url=page.url)
+    if options.category:
+        page_detail.category = page.categories[0].name
+    if options.title:
+        page_detail.title = page.title
+    if options.content:
+        if shelved_pages:
+            page_detail.content = get_content(full_pages=shelved_pages, url=page.url)
+        else:
+            page_detail.content = page.content
+    if options.last_updated:
+        page_detail.last_updated = page.last_updated
+    if options.links:
+        page_detail.links = page.links
 
-    page_details = PageDetails(
-        links=links if links else []
-    )
-
-    return page_details
+    return page_detail
 
 
 def get_content(full_pages: Dict[str, Page], url: str) -> str:

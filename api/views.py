@@ -9,7 +9,7 @@ from api.utils.convertors import convert_groups_to_meta_groups
 from api.utils.graph_helpers.graph_helpers import get_linked_groups
 from api.utils.graph_helpers.group_by_helpers import divide_pages_by_category, GroupByMode
 from api.utils.graph_helpers.level_helpers import get_subgroups_of_group, get_group
-from api.utils.graph_helpers.details_helpers import get_group_details, get_page_details
+from api.utils.graph_helpers.details_helpers import get_group_details, get_pages_details
 from . import serializers
 from .repositories import ElasticSearchRepository
 
@@ -167,14 +167,19 @@ class PageDetailsViewSet(viewsets.ViewSet):
     el_repository = ElasticSearchRepository()
 
     def create(self, request):
-        if are_params_present(["id"], request.query_params):
-            page_id = request.query_params["id"]
-            pages = self.el_repository.fetch_all()
+        if are_params_present(["title", "category", "content", "links"], request.query_params):
+            options = DetailsOptions(
+                title=request.data["title"],
+                category=request.data["category"],
+                content=request.data["content"],
+                links=request.data["links"],
+            )
+            url = request.data["url"]
+            pages = self.el_repository.basic_search(search_column="url", search_phrase=url)
             if not pages:
                 result = None
             else:
-                page = pages[page_id]
-                result = get_page_details(page)
+                result = get_pages_details(pages=pages, options=options, are_whole=True)[0]
         else:
             result = None
 
