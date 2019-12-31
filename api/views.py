@@ -138,14 +138,15 @@ class GroupDetailsViewSet(viewsets.ViewSet):
     el_repository = ElasticSearchRepository()
 
     def create(self, request):
-        if are_params_present(["id", "groupby"], request.query_params):
+        if are_params_present(["id", "options"], request.data) and are_params_present(["groupby"], request.query_params):
+            options_data = request.data["options"]
             options = DetailsOptions(
-                title=request.data["title"],
-                category=request.data["category"],
-                content=request.data["content"],
-                links=request.data["links"],
+                title=options_data["title"],
+                category=options_data["category"],
+                content=options_data["content"],
+                links=options_data["links"],
             )
-            group_id = request.query_params["id"]
+            group_id = request.data["id"]
             group_by_mode = request.query_params["groupby"]
             group = get_group(group_id, self.el_repository, group_by_mode)
 
@@ -167,14 +168,15 @@ class PageDetailsViewSet(viewsets.ViewSet):
     el_repository = ElasticSearchRepository()
 
     def create(self, request):
-        if are_params_present(["title", "category", "content", "links"], request.query_params):
+        if are_params_present(["options", "id"], request.data):
+            options_data = request.data["options"]
             options = DetailsOptions(
-                title=request.data["title"],
-                category=request.data["category"],
-                content=request.data["content"],
-                links=request.data["links"],
+                title=options_data["title"],
+                category=options_data["category"],
+                content=options_data["content"],
+                links=options_data["links"],
             )
-            url = request.data["url"]
+            url = request.data["nodeUrl"]
             pages = self.el_repository.basic_search(search_column="url", search_phrase=url)
             if not pages:
                 result = None
