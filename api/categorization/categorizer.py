@@ -10,7 +10,7 @@ MAX_SEQUENCE_LENGTH = 1000
 
 class Categorizer(metaclass=Singleton):
     def __init__(self):
-        print('calling constructir')
+        print('calling constructor')
         # Loading Tokenizer
         with open('models/tokenizer.pickle', 'rb') as handle:
             loaded_tokenizer = pickle.load(handle)
@@ -36,7 +36,8 @@ class Categorizer(metaclass=Singleton):
 
     def categorize(self, content: str) -> str:
         sequences = self.tokenizer.texts_to_sequences([content])
-        predictions = self.model.predict(pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH))
+        padded_seq = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+        predictions = self.model.predict(padded_seq)
         category_index = predictions[0].argmax(axis=0)
         category = labels_index[category_index]
 
