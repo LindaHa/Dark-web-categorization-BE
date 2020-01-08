@@ -2,7 +2,7 @@ from typing import Dict
 
 from rest_framework.response import Response
 from rest_framework import viewsets
-from api.models import Page, Link,  DetailsOptions
+from api.models import Page, Link, DetailsOptions
 from api.utils.caching_helpers import get_cached_all_groups, cache_all_groups, cache_all_groups_by_category, \
     get_cached_all_groups_by_category
 from api.utils.convertors import convert_groups_to_meta_groups
@@ -138,7 +138,8 @@ class GroupDetailsViewSet(viewsets.ViewSet):
     el_repository = ElasticSearchRepository()
 
     def create(self, request):
-        if are_params_present(["id", "options"], request.data) and are_params_present(["groupby"], request.query_params):
+        if are_params_present(["id", "options"], request.data) \
+                and are_params_present(["groupby"], request.query_params):
             options_data = request.data["options"]
             options = DetailsOptions(
                 title=options_data["title"],
@@ -176,12 +177,13 @@ class PageDetailsViewSet(viewsets.ViewSet):
                 content=options_data["content"],
                 links=options_data["links"],
             )
-            url = request.data["nodeUrl"]
+            url = request.data["id"]
             pages = self.el_repository.basic_search(search_column="url", search_phrase=url)
             if not pages:
                 result = None
             else:
-                result = get_pages_details(pages=pages, options=options, are_whole=True)[0]
+                pages = {url: pages[url]} if url in pages else pages
+                result = get_pages_details(pages=pages, options=options,  are_whole=True)[0]
         else:
             result = None
 

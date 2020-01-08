@@ -1,6 +1,6 @@
 import shelve
 
-from pip._vendor import requests
+import requests
 
 from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
 from api.utils.graph_helpers.shelving_helpers import page_shelf_name, page_shelf_key_prefix, page_shelf_batch_count, \
