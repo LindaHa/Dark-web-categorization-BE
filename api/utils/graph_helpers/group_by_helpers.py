@@ -62,7 +62,7 @@ def convert_link_aliases_to_keys(groups: List[Group]) -> List[Group]:
         converted_links = set()
         for link in group.links:
             reversed_link = labels_index[int(link.link)]
-            converted_link = Link(link=reversed_link)
+            converted_link = Link(link=reversed_link, occurrences=link.occurrences)
             converted_links.add(converted_link)
         group.links = list(converted_links)
 

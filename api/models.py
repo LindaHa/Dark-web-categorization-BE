@@ -4,9 +4,10 @@ from typing import List, Dict
 class Link(object):
     name: str
     link: str
+    occurrences: int
 
     def __init__(self, **kwargs):
-        for field in ("link", "name"):
+        for field in ("link", "name", "occurrences"):
             setattr(self, field, kwargs.get(field, None))
 
 
@@ -49,7 +50,7 @@ NUMBER_OF_FIRST_MEMBERS = 10
 
 class MetaGroup(object):
     id: str
-    links: List[str]
+    links: List[Link]
     first_members: List[Page]
     members_count: int
     categories: List[Category]

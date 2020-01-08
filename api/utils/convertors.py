@@ -14,8 +14,7 @@ def convert_groups_to_meta_groups(groups: List[Group]) -> List[MetaGroup]:
     for group in groups:
         simple_group_links = []
         if group.links:
-            for link in group.links:
-                simple_group_links.append(link.link)
+            simple_group_links = group.links
 
         first_k_members = []
         count = 0

@@ -9,6 +9,7 @@ class StringListField(serializers.ListField):
 class LinkSerializer(serializers.Serializer):
     link = serializers.CharField()
     name = serializers.CharField()
+    occurrences = serializers.IntegerField(default="1")
 
     def create(self, validated_data):
         return Link(**validated_data)
@@ -52,7 +53,7 @@ class PageSerializer(serializers.Serializer):
 
 class MetaGroupSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
-    links = StringListField()
+    links = LinkSerializer(many=True)
     first_members = PageSerializer(many=True)
     members_count = serializers.IntegerField()
     categories = CategorySerializer(many=True)

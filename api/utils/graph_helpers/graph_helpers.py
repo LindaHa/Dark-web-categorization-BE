@@ -59,17 +59,18 @@ def get_linked_groups_from_ids(
     groups = []
 
     for group_id in nodes_of_groups:
-        group_links = []
+        group_links: Dict[str, Link] = {}
         links = groups_with_links[group_id]
         parent_key_prefix = parent_group_id + "." if parent_group_id else ""
         if links is not None:
-            seen_links = []
             for link in links:
                 link_to_group = partition.get(link)
-                if link_to_group is not None and link_to_group not in seen_links and link_to_group != group_id:
-                    new_link = Link(link=str(parent_key_prefix) + str(link_to_group))
-                    group_links.append(new_link)
-                    seen_links.append(link_to_group)
+                whole_id = str(parent_key_prefix) + str(link_to_group)
+                if link_to_group is not None and link_to_group not in group_links:
+                    new_link = Link(link=whole_id, occurrences=1)
+                    group_links[whole_id] = new_link
+                elif link_to_group is not None:
+                    group_links[whole_id].occurrences += 1
 
         whole_group_id = str(parent_key_prefix) + str(group_id)
         group_members = {node.url: node for node in nodes_of_groups.get(group_id)}
@@ -91,7 +92,7 @@ def get_linked_groups_from_ids(
 
         group = Group(
             id=whole_group_id,
-            links=group_links,
+            links=[group_links[key] for key in group_links],
             members=group_members,
             categories=categories
         )
