@@ -48,30 +48,6 @@ class ElasticSearchRepository(object):
         else:
             return None
 
-    def get_one(self) -> Page:
-        payload = {
-            "size": 500,
-            "query": {
-                "bool": {
-                    "must": [],
-                    "filter": [
-                        {
-                            "bool": {
-                                "should": [
-                                    {
-                                        "match_phrase": {
-                                            "url": "http://atlayofke5rqhsma.onion/index.php?link1=timeline&u=gffreezedrymachine&type=likes"
-                                        }
-                                    }
-                                ],
-                                "minimum_should_match": 1
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-
     def fetch_chunk(self, scroll_id) -> Union[str, None]:
         payload = {
             "scroll": "1m",
