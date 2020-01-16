@@ -63,7 +63,7 @@ def get_page_details(page: Page, options: DetailsOptions, shelved_pages: Dict[st
     if options.last_updated:
         page_detail.last_updated = page.last_updated
     if options.links:
-        page_detail.links = page.links
+        page_detail.links = [link.link for link in page.links]
 
     return page_detail
 
