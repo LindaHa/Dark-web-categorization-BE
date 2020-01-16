@@ -125,6 +125,8 @@ dmypy.json
 
 #backups
 backup_db_response*
+pages_without_content*
+dump.rdb
 
 .idea/*
 !.idea/codeStyleSettings.xml

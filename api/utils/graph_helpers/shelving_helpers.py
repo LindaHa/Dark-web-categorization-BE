@@ -5,6 +5,7 @@ from api.models import Page
 page_shelf_name = 'backup_db_response'
 page_shelf_key_prefix = 'pages_batch_'
 page_shelf_batch_count = 'backed_up'
+pages_no_content = 'pages_without_content'
 
 
 def get_shelved_pages() -> Dict[str, Page]:
