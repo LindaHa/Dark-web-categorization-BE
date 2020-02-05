@@ -2,31 +2,19 @@ from typing import Any, Dict, List
 from api.models import Page, Group
 import redis
 import pickle
-import shelve
-
-from api.utils.graph_helpers.shelving_helpers import pages_no_content
 
 
 def redis_cache_complex_object(redis_key: str, complex_object: object) -> None:
-    # r = redis.Redis()
-    # pickled_obj = pickle.dumps(complex_object)
-    # r.set(redis_key, pickled_obj)
-    shelved_pages = shelve.open(pages_no_content)
-    shelved_pages[redis_key] = complex_object
-    shelved_pages.close()
+    r = redis.Redis()
+    pickled_obj = pickle.dumps(complex_object)
+    r.set(redis_key, pickled_obj)
 
 
 def redis_get_complex_object(redis_key: str) -> Any:
-    # r = redis.Redis()
-    # from_redis = r.get(redis_key)
-    # if from_redis:
-    #     return pickle.loads(from_redis)
-    pages = {}
-    shelved_pages = shelve.open(pages_no_content)
-    if redis_key in shelved_pages:
-        pages = shelved_pages[redis_key]
-    shelved_pages.close()
-    return pages
+    r = redis.Redis()
+    from_redis = r.get(redis_key)
+    if from_redis:
+        return pickle.loads(from_redis)
 
 
 # The json with pages and additional info of the response

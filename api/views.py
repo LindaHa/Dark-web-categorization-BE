@@ -80,6 +80,7 @@ class GroupsByLinkViewSet(viewsets.ViewSet):
             result = convert_groups_to_meta_groups(groups)
 
         else:
+            # groups = None
             groups = get_cached_all_groups()
             if not groups:
                 response = self.el_repository.fetch_all()

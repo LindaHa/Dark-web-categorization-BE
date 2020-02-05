@@ -64,7 +64,8 @@ class ElasticSearchRepository(object):
         if all_pages_cached:
             return all_pages_cached
 
-        final_pages = get_shelved_pages()
+        # final_pages = get_shelved_pages()
+        final_pages = {}
         if not final_pages:
             payload = {
                 "size": CHUNK_SIZE,
