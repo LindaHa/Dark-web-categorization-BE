@@ -66,13 +66,15 @@ class GroupsByLinkViewSet(viewsets.ViewSet):
     el_repository = ElasticSearchRepository()
 
     def list(self, request):
+        result = {}
         if are_params_present(["url_filter"], request.query_params):
-            search_column = "content"
+            search_columns = ["url^3", "content"]
             search_phrase = request.query_params["url_filter"]
 
-            response = self.el_repository.basic_search(search_column, search_phrase)
-            groups = get_linked_groups(response)
-            result = convert_groups_to_meta_groups(groups)
+            response = self.el_repository.multi_search(search_columns, search_phrase)
+            if response:
+                groups = get_linked_groups(response)
+                result = convert_groups_to_meta_groups(groups)
 
         elif are_params_present(["id"], request.query_params):
             group_id = request.query_params["id"]
@@ -107,7 +109,7 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
             search_phrase = request.query_params["url_filter"]
 
             response = self.el_repository.basic_search(search_column, search_phrase)
-            groups = get_linked_groups(response)
+            groups = divide_pages_by_category(response)
             result = convert_groups_to_meta_groups(groups)
 
         elif are_params_present(["id"], request.query_params):

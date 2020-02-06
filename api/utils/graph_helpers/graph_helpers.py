@@ -66,7 +66,7 @@ def get_linked_groups_from_ids(
             for link in links:
                 link_to_group = partition.get(link)
                 whole_id = str(parent_key_prefix) + str(link_to_group)
-                if link_to_group is not None and link_to_group != group_id:
+                if link_to_group is not None:
                     if str(link_to_group) not in group_links:
                         new_link = Link(link=whole_id, occurrences=1)
                         group_links[whole_id] = new_link
@@ -105,9 +105,11 @@ def get_linked_groups_from_ids(
 def get_groups_without_links_and_isolates(
         pages: Dict[str, Page],
         table_to_alias: Dict[str, int],
-        table_to_original: Dict[int, str]
+        table_to_original: Dict[int, str],
 ) -> Tuple[Dict[str, int], List[int]]:
     """
+    :param will_filter_isolates: indicates whether to remove isolates from the main graph or not; default is to remove them
+    :type will_filter_isolates: bool
     :param table_to_alias: page key - alias pairs
     :type table_to_alias: Dict[str, int],
     :param table_to_original: page alias - page key pairs
@@ -121,11 +123,15 @@ def get_groups_without_links_and_isolates(
 
     vertex_aliases = get_node_aliases(pages, table_to_alias)
     graph_edges = get_edges(vertex_aliases)
+    graph_nodes = [key for key in table_to_original]
 
-    graph.add_nodes_from(table_to_original.keys())
+    graph.add_nodes_from(graph_nodes)
     graph.add_edges_from(graph_edges)
 
     graph_no_isolates, isolates = filter_isolates(graph)
+
+    if not graph_no_isolates.node:
+        return {}, isolates
 
     partition = cylouvain.best_partition(graph_no_isolates)
     originals_page_group_pairs = get_original_node_key_group_pairs(partition, table_to_original)
@@ -155,7 +161,12 @@ def get_linked_groups(pages: Dict[str, Page], parent_group_id: str = None) -> Li
         number_of_runs += 1
         partition_count_last_run = partition_count
         table_to_alias, table_to_original = create_hash_tables(mined_data)
-        page_originals_partition, isolates = get_groups_without_links_and_isolates(mined_data, table_to_alias, table_to_original)
+        page_originals_partition, isolates = get_groups_without_links_and_isolates(
+            mined_data, table_to_alias, table_to_original)
+
+        if not page_originals_partition:
+            return insert_isolated_nodes_group(linked_groups=[], isolated_nodes=isolates, pages=pages, table_to_original=table_to_original)
+
         linked_groups = get_linked_groups_from_ids(mined_data, page_originals_partition, parent_group_id)
 
         new_mined_data = {}

@@ -15,9 +15,10 @@ def filter_isolates(
     :rtype: Tuple[networkx graph, List[int]]
     """
     isolates = list(nx.isolates(graph))
-    graph.remove_nodes_from(isolates)
+    graph_no_isolates = graph.copy()
+    graph_no_isolates.remove_nodes_from(isolates)
 
-    return graph, isolates
+    return graph_no_isolates, isolates
 
 
 def insert_isolated_nodes_group(
