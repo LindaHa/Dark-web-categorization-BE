@@ -23,18 +23,25 @@ def get_links_and_nodes_of_groups(
     :return: links to other nodes and pages of a group
     :rtype:  Tuple[Dict[int, List[str]], Dict[int, List[Page]]]
     """
-    groups_with_links = defaultdict(list)
+    groups_with_links_searchable = {}
     nodes_of_groups = defaultdict(list)
     for group_key, node_keys in reversed_partition.items():
         for node_key in node_keys:
             full_node = pages.get(node_key)
 
             if full_node:
+                if group_key not in groups_with_links_searchable:
+                    groups_with_links_searchable[group_key] = {}
                 nodes_of_groups[group_key].append(full_node)
                 links = set(full_node.links)
-                for link in links:
-                    if link.link not in groups_with_links[group_key]:
-                        groups_with_links[group_key].append(link.link)
+                for full_link in links:
+                    link = full_link.link
+                    if link not in groups_with_links_searchable[group_key]:
+                        groups_with_links_searchable[group_key][link] = link
+
+    groups_with_links = {}
+    for group_key, group_links in groups_with_links_searchable.items():
+        groups_with_links[group_key] = [link_key for link_key in group_links]
 
     return groups_with_links, nodes_of_groups
 
@@ -165,7 +172,8 @@ def get_linked_groups(pages: Dict[str, Page], parent_group_id: str = None) -> Li
             mined_data, table_to_alias, table_to_original)
 
         if not page_originals_partition:
-            return insert_isolated_nodes_group(linked_groups=[], isolated_nodes=isolates, pages=pages, table_to_original=table_to_original)
+            return insert_isolated_nodes_group(linked_groups=[], isolated_nodes=isolates, pages=pages,
+                                               table_to_original=table_to_original)
 
         linked_groups = get_linked_groups_from_ids(mined_data, page_originals_partition, parent_group_id)
 

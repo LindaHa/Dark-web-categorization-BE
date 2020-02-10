@@ -3,11 +3,10 @@ import shelve
 import requests
 
 from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
-from api.utils.graph_helpers.shelving_helpers import page_shelf_name, page_shelf_key_prefix, page_shelf_batch_count, \
-    get_shelved_pages
+from api.utils.graph_helpers.shelving_helpers import page_shelf_name, page_shelf_key_prefix, page_shelf_batch_count
 from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
-from typing import Dict, Union
+from typing import Dict, Union, List
 
 CHUNK_SIZE = 500
 
@@ -17,7 +16,7 @@ class ElasticSearchRepository(object):
         self.server = "http://147.251.124.23:9200/"
         self.end_point_url = self.server + "tor,i2p/"
 
-    def basic_search(self, search_column, search_phrase) -> Union[Dict[str, Page], None]:
+    def basic_search(self, search_fields, search_phrase) -> Union[Dict[str, Page], None]:
         payload = {
             "size": 500,
             "query": {
@@ -26,13 +25,7 @@ class ElasticSearchRepository(object):
                     "filter": [
                         {
                             "bool": {
-                                "should": [
-                                    {
-                                        "match_phrase": {
-                                            search_column: search_phrase
-                                        }
-                                    }
-                                ],
+                                "should": create_should_payload(search_fields, search_phrase),
                                 "minimum_should_match": 1
                             }
                         }
@@ -62,7 +55,7 @@ class ElasticSearchRepository(object):
         if response.status_code == 200:
             json = response.json()
             pages = get_pages_from_json(json)
-            return pages
+            return page_or_pages(pages, search_phrase)
         else:
             return None
 
@@ -127,6 +120,48 @@ class ElasticSearchRepository(object):
         cache_all_pages(final_pages)
 
         return final_pages
+
+
+def page_or_pages(pages: Dict[str, Page], search_phrase: str) -> Dict[str, Page]:
+    """
+    :param pages: the pages from which one is seeked
+    :type pages: Dict[str, Page]
+    :param search_phrase: page url or another keyword
+    :type search_phrase: str
+    :return: a dictionary of one concrete page if it was found, pages otherwise
+    :rtype: Dict[str, Page]
+    """
+    if search_phrase in pages:
+        return {search_phrase: pages[search_phrase]}
+
+    return pages
+
+
+def create_should_payload(search_fields: List[str], search_phrase) -> List[any]:
+    """
+    :param search_fields: fields to which the search-phrase will be applied
+    :type search_fields: List[str]
+    :param search_phrase: the phrase according to which a page or pages are to be found
+    :type search_phrase: str
+    :return: the "should" part of the payload
+    :rtype: List[any]
+    """
+    should = []
+    for field in search_fields:
+        should.append({
+            "bool": {
+                "should": [
+                    {
+                        "match_phrase": {
+                            field: search_phrase
+                        }
+                    }
+                ],
+                "minimum_should_match": 1
+            }
+        })
+
+    return should
 
 
 def guarantee_pages_for_links(pages: Dict[str, Page]) -> Dict[str, Page]:

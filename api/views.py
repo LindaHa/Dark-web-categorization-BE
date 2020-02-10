@@ -68,10 +68,10 @@ class GroupsByLinkViewSet(viewsets.ViewSet):
     def list(self, request):
         result = {}
         if are_params_present(["url_filter"], request.query_params):
-            search_columns = ["url^3", "content"]
+            search_fields = ["url", "content"]
             search_phrase = request.query_params["url_filter"]
 
-            response = self.el_repository.multi_search(search_columns, search_phrase)
+            response = self.el_repository.basic_search(search_fields=search_fields, search_phrase=search_phrase)
             if response:
                 groups = get_linked_groups(response)
                 result = convert_groups_to_meta_groups(groups)
@@ -105,10 +105,10 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
 
     def list(self, request):
         if are_params_present(["url_filter"], request.query_params):
-            search_column = "content"
+            search_fields = ["url", "content"]
             search_phrase = request.query_params["url_filter"]
 
-            response = self.el_repository.basic_search(search_column, search_phrase)
+            response = self.el_repository.basic_search(search_fields=search_fields, search_phrase=search_phrase)
             groups = divide_pages_by_category(response)
             result = convert_groups_to_meta_groups(groups)
 
@@ -181,7 +181,7 @@ class PageDetailsViewSet(viewsets.ViewSet):
                 links=options_data["links"],
             )
             url = request.data["id"]
-            pages = self.el_repository.basic_search(search_column="url", search_phrase=url)
+            pages = self.el_repository.basic_search(search_fields=["url"], search_phrase=url)
             if not pages:
                 result = None
             else:
