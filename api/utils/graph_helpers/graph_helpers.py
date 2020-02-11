@@ -3,6 +3,7 @@ from api.models import Group, Page, Link, Category
 from typing import Dict, List, Tuple
 import cylouvain
 import networkx as nx
+from api.utils.graph_helpers.category_helpers import create_categories_for_nodes
 from api.utils.graph_helpers.isolate_helpers import filter_isolates, insert_isolated_nodes_group
 from api.utils.graph_helpers.node_alias_helpers import create_hash_tables, get_node_aliases, \
     get_original_node_key_group_pairs
@@ -65,7 +66,7 @@ def get_linked_groups_from_ids(
     groups_with_links, nodes_of_groups = get_links_and_nodes_of_groups(pages, reversed_partition)
     groups = []
 
-    for group_id in nodes_of_groups:
+    for group_id, g_nodes in nodes_of_groups.items():
         group_links: Dict[str, Link] = {}
         links = groups_with_links[group_id]
         parent_key_prefix = parent_group_id + "." if parent_group_id else ""
@@ -81,22 +82,8 @@ def get_linked_groups_from_ids(
                         group_links[whole_id].occurrences += 1
 
         whole_group_id = str(parent_key_prefix) + str(group_id)
-        group_members = {node.url: node for node in nodes_of_groups.get(group_id)}
-        group_categories = {}
-        for node in nodes_of_groups.get(group_id):
-            for node_cat in node.categories:
-                if node_cat.name in group_categories:
-                    group_categories[node_cat.name] += node_cat.occurrence
-                else:
-                    group_categories[node_cat.name] = node_cat.occurrence
-
-        categories = []
-        for g_cat in group_categories:
-            category = Category(
-                name=g_cat,
-                occurrence=group_categories[g_cat]
-            )
-            categories.append(category)
+        group_members = {node.url: node for node in g_nodes}
+        categories = create_categories_for_nodes(g_nodes)
 
         group = Group(
             id=whole_group_id,

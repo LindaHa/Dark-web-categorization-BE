@@ -3,6 +3,7 @@ from typing import Any, Tuple, List, Dict
 import networkx as nx
 
 from api.models import Group, Page
+from api.utils.graph_helpers.category_helpers import create_categories_for_nodes
 
 
 def filter_isolates(
@@ -46,8 +47,10 @@ def insert_isolated_nodes_group(
         full_node = pages.get(original_key)
         group_members[original_key] = full_node
 
+    categories = create_categories_for_nodes([node for key, node in group_members.items()])
+
     if len(group_members) > 0:
-        group = Group(id=str(len(linked_groups)), members=group_members)
+        group = Group(id=str(len(linked_groups)), members=group_members, categories=categories)
         linked_groups.append(group)
 
     return linked_groups
