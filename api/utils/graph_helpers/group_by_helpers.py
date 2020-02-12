@@ -37,7 +37,7 @@ def name_by_category(groups: List[Group]) -> List[Group]:
     renamed_groups = groups.copy()
     for group in renamed_groups:
         groups_cat = group.categories[0].name
-        group.id = groups_cat
+        group.id = groups_cat.replace(" ", "")
 
     return renamed_groups
 

@@ -33,7 +33,7 @@ def get_pages_from_json(json) -> Dict[str, Page]:
             last_updated = page_info.get("updated_on")
             links = get_links_from_json(response_links)
             content = page_info.get("content")
-            category_name = categorizer.categorize(content)
+            category_name = categorizer.categorize(bytes(content, 'utf-8').decode('utf-8', 'ignore'))
             category = Category(
                     name=category_name,
                     occurrence=1,

@@ -82,7 +82,6 @@ class GroupsByLinkViewSet(viewsets.ViewSet):
             result = convert_groups_to_meta_groups(groups)
 
         else:
-            # groups = None
             groups = get_cached_all_groups()
             if not groups:
                 response = self.el_repository.fetch_all()
@@ -119,7 +118,6 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
 
         else:
             groups = get_cached_all_groups_by_category()
-
             if not groups:
                 pages = self.el_repository.fetch_all()
                 groups = divide_pages_by_category(pages)
