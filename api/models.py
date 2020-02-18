@@ -83,3 +83,12 @@ class DetailsOptions(object):
     def __init__(self, **kwargs):
         for field in ("title", "category", "content", "links", "last_updated"):
             setattr(self, field, kwargs.get(field, None))
+
+
+class FilterOptions(object):
+    content: bool
+    url: bool
+
+    def __init__(self, **kwargs):
+        for field in ("content", "url"):
+            setattr(self, field, kwargs.get(field, None))
