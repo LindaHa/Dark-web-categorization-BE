@@ -12,6 +12,5 @@ labels_index = {
     10: 'Fake Identity and Hitmen',
     11: 'Encyclopedia and Knowledge',
     12: 'Gambling',
-    13: 'Financial Fraud',
-    14: 'Guns',
+    13: 'Guns',
 }
