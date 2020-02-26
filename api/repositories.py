@@ -199,11 +199,11 @@ def remove_links_to_non_scraped_pages(pages: Dict[str, Page]) -> Dict[str, Page]
     all_links = {}
     not_scraped_links = {}
     for page_key in pages:
-        domain = page_key.split(".onion")[0]
+        domain = get_domain_from_url(page_key)
         page = pages[page_key]
-        for link_key in page.links:
-            link_key = link_key.link
-            link_domain = link_key.split(".onion")[0]
+        for link in page.links:
+            link_key = link.link
+            link_domain = get_domain_from_url(link_key)
             if link_key not in all_links:
                 all_links[link_key] = link_key
             if link_domain not in link_domains:
@@ -228,3 +228,20 @@ def remove_links_to_non_scraped_pages(pages: Dict[str, Page]) -> Dict[str, Page]
     print("There are {} unique links.".format(len(all_links)))
     print("There are {} unique links which were not scraped.".format(len(not_scraped_links)))
     return pages
+
+
+def get_domain_from_url(url: str) -> str:
+    """
+    :param url: the url whit the domain
+    :type url: str
+    :return: the domain of the give url
+    :rtype: str
+    """
+    domain = ''
+    if '.onion' in url:
+        domain = url.split(".onion")[0]
+    elif '.i2p' in url:
+        domain = url.split(".i2p")[0]
+
+    return domain
+
