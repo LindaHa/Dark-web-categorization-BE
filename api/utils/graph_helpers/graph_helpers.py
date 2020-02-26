@@ -74,7 +74,7 @@ def get_linked_groups_from_ids(
             for link in links:
                 link_to_group = partition.get(link)
                 whole_id = str(parent_key_prefix) + str(link_to_group)
-                if link_to_group is not None:
+                if link_to_group is not None and link_to_group != group_id:
                     if str(link_to_group) not in group_links:
                         new_link = Link(link=whole_id, occurrences=1)
                         group_links[whole_id] = new_link
