@@ -26,7 +26,7 @@ def get_pages_from_json(json) -> Dict[str, Page]:
     for page in response_pages:
         page_info = page.get("_source")
         url = page_info.get("raw_url")
-        if url is not None:
+        if is_url_valid(url):
             page_id = page.get("_id")
             title = page_info.get("title")
             response_links = page_info.get("links")
@@ -57,7 +57,17 @@ def get_links_from_json(json_links) -> List[Link]:
     if json_links:
         for json_link in json_links:
             link_url = json_link.get("link")
-            if link_url and not link_url.startswith("/"):
+            if is_url_valid(link_url) and not link_url.startswith("/"):
                 link = Link(link=link_url, name=json_link.get("link_name"))
                 links.append(link)
     return links
+
+
+def is_url_valid(url: str) -> bool:
+    """
+    :param url: the url of a page
+    :type url: str
+    :return: returns true if the url is valid, false otherwise
+    :rtype: bool
+    """
+    return not not url and not not url.strip() and ('.i2p' in url or '.onion' in url)
