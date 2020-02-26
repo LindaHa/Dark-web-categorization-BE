@@ -50,7 +50,7 @@ def insert_isolated_nodes_group(
     categories = create_categories_for_nodes([node for key, node in group_members.items()])
 
     if len(group_members) > 0:
-        group = Group(id=str(len(linked_groups)), members=group_members, categories=categories)
+        group = Group(id='isolates'+str(len(linked_groups)), members=group_members, categories=categories)
         linked_groups.append(group)
 
     return linked_groups
