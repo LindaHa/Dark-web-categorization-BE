@@ -58,8 +58,9 @@ def get_links_from_json(json_links) -> List[Link]:
         for json_link in json_links:
             link_url = json_link.get("link")
             if is_url_valid(link_url) and not link_url.startswith("/"):
-                link = Link(link=link_url, name=json_link.get("link_name"))
+                link = Link(link=link_url, name=json_link.get("link_name"), occurrences=1)
                 links.append(link)
+
     return links
 
 
