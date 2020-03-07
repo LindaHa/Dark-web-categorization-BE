@@ -53,15 +53,15 @@ def get_pages_from_json(json) -> Dict[str, Page]:
 
 
 def get_links_from_json(json_links) -> List[Link]:
-    links = []
+    links = {}
     if json_links:
         for json_link in json_links:
             link_url = json_link.get("link")
-            if is_url_valid(link_url) and not link_url.startswith("/"):
+            if is_url_valid(link_url) and not link_url.startswith("/") and link_url not in links:
                 link = Link(link=link_url, name=json_link.get("link_name"), occurrences=1)
-                links.append(link)
+                links[link_url] = link
 
-    return links
+    return [link for url, link in links.items()]
 
 
 def is_url_valid(url: str) -> bool:

@@ -15,7 +15,7 @@ MAX_PARTITION_COUNT = 50
 def get_links_and_nodes_of_groups(
         pages: Dict[str, Page],
         reversed_partition: Dict[int, List[str]]
-) -> Tuple[Dict[int, List[str]], Dict[int, List[Page]]]:
+) -> Tuple[Dict[int, List[Link]], Dict[int, List[Page]]]:
     """
     :param pages: the original pages from db
     :type pages: Dict[str, Page]
@@ -38,11 +38,15 @@ def get_links_and_nodes_of_groups(
                 for full_link in links:
                     link = full_link.link
                     if link not in groups_with_links_searchable[group_key]:
-                        groups_with_links_searchable[group_key][link] = link
+                        groups_with_links_searchable[group_key][link] = full_link.occurrences
+                    else:
+                        groups_with_links_searchable[group_key][link] += full_link.occurrences
 
     groups_with_links = {}
     for group_key, group_links in groups_with_links_searchable.items():
-        groups_with_links[group_key] = [link_key for link_key in group_links]
+        groups_with_links[group_key] = [
+            Link(link=link_key, occurrences=occurrence) for link_key, occurrence in group_links.items()
+        ]
 
     return groups_with_links, nodes_of_groups
 
@@ -72,14 +76,14 @@ def get_linked_groups_from_ids(
         parent_key_prefix = parent_group_id + "." if parent_group_id else ""
         if links is not None:
             for link in links:
-                link_to_group = partition.get(link)
+                link_to_group = partition.get(link.link)
                 whole_id = str(parent_key_prefix) + str(link_to_group)
                 if link_to_group is not None and link_to_group != group_id:
                     if str(link_to_group) not in group_links:
-                        new_link = Link(link=whole_id, occurrences=1)
+                        new_link = Link(link=whole_id, occurrences=link.occurrences)
                         group_links[whole_id] = new_link
                     else:
-                        group_links[whole_id].occurrences += 1
+                        group_links[whole_id].occurrences += link.occurrences
 
         whole_group_id = str(parent_key_prefix) + str(group_id)
         group_members = {node.url: node for node in g_nodes}
