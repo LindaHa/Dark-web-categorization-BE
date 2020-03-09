@@ -4,6 +4,7 @@ import requests
 
 from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
 from api.utils.graph_helpers.shelving_helpers import page_shelf_name, page_shelf_key_prefix, page_shelf_batch_count
+from api.utils.graph_helpers.url_helpers import get_domain_from_url
 from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
 from typing import Dict, Union, List
@@ -228,20 +229,3 @@ def remove_links_to_non_scraped_pages(pages: Dict[str, Page]) -> Dict[str, Page]
     print("There are {} unique links.".format(len(all_links)))
     print("There are {} unique links which were not scraped.".format(len(not_scraped_links)))
     return pages
-
-
-def get_domain_from_url(url: str) -> str:
-    """
-    :param url: the url whit the domain
-    :type url: str
-    :return: the domain of the give url
-    :rtype: str
-    """
-    domain = ''
-    if '.onion' in url:
-        domain = url.split(".onion")[0]
-    elif '.i2p' in url:
-        domain = url.split(".i2p")[0]
-
-    return domain
-

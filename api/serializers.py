@@ -56,6 +56,7 @@ class MetaGroupSerializer(serializers.Serializer):
     links = LinkSerializer(many=True)
     first_members = PageSerializer(many=True)
     members_count = serializers.IntegerField()
+    domains_count = serializers.IntegerField()
     categories = CategorySerializer(many=True)
 
     def create(self, validated_data):

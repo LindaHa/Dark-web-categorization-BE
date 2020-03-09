@@ -53,10 +53,11 @@ class MetaGroup(object):
     links: List[Link]
     first_members: List[Page]
     members_count: int
+    domains_count: int
     categories: List[Category]
 
     def __init__(self, **kwargs):
-        for field in ("id", "links", "first_members", "members_count", "categories"):
+        for field in ("id", "links", "first_members", "members_count", "domains_count", "categories"):
             setattr(self, field, kwargs.get(field, None))
 
 
