@@ -1,13 +1,13 @@
 from collections import defaultdict
-from api.models import Group, Page, Link, Category
+from api.models import Group, Page, Link
 from typing import Dict, List, Tuple
-import cylouvain
-import networkx as nx
 from api.utils.graph_helpers.category_helpers import create_categories_for_nodes
-from api.utils.graph_helpers.isolate_helpers import filter_isolates, insert_isolated_nodes_group
+from api.utils.graph_helpers.isolate_helpers import insert_isolated_nodes_group
 from api.utils.graph_helpers.node_alias_helpers import create_hash_tables, get_node_aliases, \
     get_original_node_key_group_pairs
 from api.utils.graph_helpers.partition_helpers import reverse_partition
+import leidenalg
+import igraph as ig
 
 MAX_PARTITION_COUNT = 50
 
@@ -104,34 +104,47 @@ def get_groups_without_links_and_isolates(
         pages: Dict[str, Page],
         table_to_alias: Dict[str, int],
         table_to_original: Dict[int, str],
+        use_louvain: bool = False,
 ) -> Tuple[Dict[str, int], List[int]]:
     """
-    :param will_filter_isolates: indicates whether to remove isolates from the main graph or not; default is to remove them
-    :type will_filter_isolates: bool
     :param table_to_alias: page key - alias pairs
     :type table_to_alias: Dict[str, int],
     :param table_to_original: page alias - page key pairs
     :type table_to_original: Dict[str, int],
     :param pages: the original pages from db
     :type pages: Dict[str, Page]
+    :param use_louvain: enforces the usage of the Louvain algorithm if set to True
+    :type use_louvain: bool
     :return: the original keys of pages with the respective group keys along with isolates if any
     :rtype: Tuple[Dict[str, int], List[int]]
     """
-    graph = nx.Graph()
+    graph = ig.Graph()
 
     vertex_aliases = get_node_aliases(pages, table_to_alias)
     graph_edges = get_edges(vertex_aliases)
     graph_nodes = [key for key in table_to_original]
 
-    graph.add_nodes_from(graph_nodes)
-    graph.add_edges_from(graph_edges)
+    graph.add_vertices(len(graph_nodes))
+    graph.vs['id'] = graph_nodes
+    graph.add_edges(graph_edges)
 
-    graph_no_isolates, isolates = filter_isolates(graph)
+    isolates = [(v.index, v['id']) for v in graph.vs.select(_degree=0)]
+    graph.delete_vertices([v[0] for v in isolates])
+    isolates = [v[1] for v in isolates]
 
-    if not graph_no_isolates.node:
+    if len(graph.vs) == 0:
         return {}, isolates
 
-    partition = cylouvain.best_partition(graph_no_isolates)
+    if use_louvain:
+        partition = graph.community_multilevel()
+    else:
+        partition = leidenalg.find_partition(graph, leidenalg.ModularityVertexPartition)
+
+    partition_map = {}
+    for index, p in enumerate(partition.membership):
+        partition_map[graph.vs[index]['id']] = p
+    partition = partition_map
+
     originals_page_group_pairs = get_original_node_key_group_pairs(partition, table_to_original)
 
     return originals_page_group_pairs, isolates

@@ -1,25 +1,6 @@
-from typing import Any, Tuple, List, Dict
-
-import networkx as nx
-
+from typing import List, Dict
 from api.models import Group, Page
 from api.utils.graph_helpers.category_helpers import create_categories_for_nodes
-
-
-def filter_isolates(
-        graph: Any
-) -> Tuple[Any, List[int]]:
-    """
-    :param graph: the mined graph
-    :type graph: networkx graph
-    :return: the given graph without isolated vertices and the isolated vertices
-    :rtype: Tuple[networkx graph, List[int]]
-    """
-    isolates = list(nx.isolates(graph))
-    graph_no_isolates = graph.copy()
-    graph_no_isolates.remove_nodes_from(isolates)
-
-    return graph_no_isolates, isolates
 
 
 def insert_isolated_nodes_group(
