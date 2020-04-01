@@ -172,13 +172,10 @@ def get_linked_groups(pages: Dict[str, Page], parent_group_id: str = None) -> Li
         number_of_runs += 1
         partition_count_last_run = partition_count
         table_to_alias, table_to_original = create_hash_tables(mined_data)
-        page_originals_partition, isolates = get_groups_without_links_and_isolates(
+        page_originals_partition, isolated_nodes = get_groups_without_links_and_isolates(
             mined_data, table_to_alias, table_to_original)
-
-        if not page_originals_partition:
-            return insert_isolated_nodes_group(linked_groups=[], isolated_nodes=isolates, pages=pages,
-                                               table_to_original=table_to_original)
-
+        if not isolates and isolated_nodes:
+            isolates = isolated_nodes
         linked_groups = get_linked_groups_from_ids(mined_data, page_originals_partition, parent_group_id)
 
         new_mined_data = {}
@@ -203,7 +200,7 @@ def get_linked_groups(pages: Dict[str, Page], parent_group_id: str = None) -> Li
     if parent_group_id is None:
         linked_groups = insert_isolated_nodes_group(
             linked_groups,
-            isolates if number_of_runs == 1 else [],
+            isolates,
             pages,
             original_table_to_original_keys
         )
