@@ -5,6 +5,12 @@ from api.models import Page
 
 
 def create_hash_tables(pages: Dict[str, Page]) -> Tuple[Dict[str, int], Dict[int, str]]:
+    """
+    :param pages: the original pages
+    :type pages: Dict[str, Page]
+    :return: a table with the url of the page and the alias to go with the url, and a table with the alias of the pages and the url represented by the alias
+    :rtype: Tuple[Dict[str, int], Dict[int, str]]
+    """
     index = 0
     table_to_alias = dict()
     table_to_original = dict()
@@ -28,6 +34,14 @@ def get_node_aliases(
         pages: Dict[str, Page],
         table_to_alias: Dict[str, int]
 ) -> Dict[int, List[int]]:
+    """
+    :param pages: the original pages
+    :type pages: Dict[str, Page]
+    :param table_to_alias: a table with the page url and the alias to go with the url
+    :type table_to_alias: Dict[str, int]
+    :return: a table with the alias of the page and a list with urls the page links to
+    :rtype: Dict[int, List[int]]
+    """
     pairs = defaultdict(list)
     for page_row in pages:
         page = pages.get(page_row)
@@ -53,6 +67,14 @@ def get_original_node_key_group_pairs(
         partition: Dict[int, int],
         table_to_original: Dict[int, str]
 ) -> Dict[str, int]:
+    """
+    :param partition: a hash table with the page alias and the community the page was assigned to
+    :type partition: Dict[int, int]
+    :param table_to_original: a table with the alias of a page and the url corresponding to the alias
+    :type table_to_original: Dict[int, str]
+    :return: a hash table with the page url and the community the page was assigned to
+    :rtype: Dict[str, int]
+    """
     original_node_key_group_pairs = {}
     for node_alias in partition:
         associated_component_key = partition[node_alias]
