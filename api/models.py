@@ -2,12 +2,11 @@ from typing import List, Dict
 
 
 class Link(object):
-    name: str
     link: str
     occurrences: int
 
     def __init__(self, **kwargs):
-        for field in ("link", "name", "occurrences"):
+        for field in ("link", "occurrences"):
             setattr(self, field, kwargs.get(field, None))
 
 
@@ -21,7 +20,6 @@ class Category(object):
 
 
 class Page(object):
-    id: str
     url: str
     content: str
     title: str
@@ -30,7 +28,7 @@ class Page(object):
     last_updated: str
 
     def __init__(self, **kwargs):
-        for field in ("id", "url", "content", "title", "links", "categories", "last_updated"):
+        for field in ("url", "content", "title", "links", "categories", "last_updated"):
             setattr(self, field, kwargs.get(field, None))
 
 

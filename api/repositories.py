@@ -42,24 +42,6 @@ class ElasticSearchRepository(object):
         else:
             return None
 
-    def multi_search(self, search_columns, search_phrase) -> Union[Dict[str, Page], None]:
-        payload = {
-            "size": 500,
-            "query": {
-                "multi_match": {
-                    "query": search_phrase,
-                    "fields": search_columns
-                }
-            }
-        }
-        response = requests.post(self.end_point_url + "_search", json=payload)
-        if response.status_code == 200:
-            json = response.json()
-            pages = get_pages_from_json(json)
-            return page_or_pages(pages, search_phrase)
-        else:
-            return None
-
     def fetch_chunk(self, scroll_id) -> Union[str, None]:
         payload = {
             "scroll": "1m",

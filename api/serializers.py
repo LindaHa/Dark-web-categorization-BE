@@ -8,7 +8,6 @@ class StringListField(serializers.ListField):
 
 class LinkSerializer(serializers.Serializer):
     link = serializers.CharField()
-    name = serializers.CharField()
     occurrences = serializers.IntegerField(default="1")
 
     def create(self, validated_data):
@@ -34,8 +33,7 @@ class CategorySerializer(serializers.Serializer):
 
 
 class PageSerializer(serializers.Serializer):
-    id = serializers.CharField(read_only=True)
-    url = serializers.CharField()
+    url = serializers.CharField(read_only=True)
     # commenting this out because it's too much data to send to the client's side
     # content = serializers.CharField()
     links = LinkSerializer(many=True)
