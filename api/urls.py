@@ -1,12 +1,12 @@
 from rest_framework import routers
 
-from . import views
+from . import view_sets
 
 router = routers.DefaultRouter()
 
-router.register(r'pages/bylink', views.GroupsByLinkViewSet, base_name='tasks')
-router.register(r'pages/bycategory', views.GroupsByCategoryViewSet, base_name='tasks')
-router.register(r'details/group', views.GroupDetailsViewSet, base_name='tasks')
-router.register(r'details/page', views.PageDetailsViewSet, base_name='tasks')
+router.register(r'pages/bylink', view_sets.GroupsByLinkViewSet, base_name='tasks')
+router.register(r'pages/bycategory', view_sets.GroupsByCategoryViewSet, base_name='tasks')
+router.register(r'details/group', view_sets.GroupDetailsViewSet, base_name='tasks')
+router.register(r'details/page', view_sets.PageDetailsViewSet, base_name='tasks')
 
 urlpatterns = router.urls
