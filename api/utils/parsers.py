@@ -1,4 +1,4 @@
-from api.categorization.categorizer import Categorizer
+from api.classification.categorizer import Categorizer
 from api.models import Page, Link, Category
 from typing import Dict, List
 

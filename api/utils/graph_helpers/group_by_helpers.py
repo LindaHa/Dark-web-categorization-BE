@@ -1,6 +1,6 @@
 from typing import Dict, List
 from enum import Enum
-from api.categorization.labels import labels_index
+from api.classification.labels import labels_index
 from api.models import Page, Group, Link
 from api.utils.graph_helpers.graph_helpers import get_linked_groups_from_ids
 

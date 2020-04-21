@@ -2,7 +2,7 @@ import pickle
 from keras.models import model_from_json
 from keras.preprocessing.sequence import pad_sequences
 
-from api.categorization.labels import labels_index
+from api.classification.labels import labels_index
 from api.utils.singleton import Singleton
 
 MAX_SEQUENCE_LENGTH = 1000
