@@ -1,6 +1,6 @@
 from typing import List, Dict
 from api.models import Group, PageDetails, Page, DetailsOptions
-from api.utils.graph_helpers.shelving_helpers import get_shelved_pages
+from api.utils.shelving_helpers import get_shelved_pages
 
 
 def get_group_details(group: Group, options: DetailsOptions) -> List[PageDetails]:

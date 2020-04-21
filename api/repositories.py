@@ -3,7 +3,7 @@ import shelve
 import requests
 
 from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
-from api.utils.graph_helpers.shelving_helpers import page_shelf_name, page_shelf_key_prefix, page_shelf_batch_count
+from api.utils.shelving_helpers import page_shelf_name, page_shelf_key_prefix, page_shelf_batch_count
 from api.utils.graph_helpers.url_helpers import get_domain_from_url
 from api.utils.parsers import get_pages_from_json, get_scroll_id, get_hits
 from api.models import Page
