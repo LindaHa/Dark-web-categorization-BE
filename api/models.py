@@ -43,7 +43,7 @@ class Group(object):
             setattr(self, field, kwargs.get(field, None))
 
 
-NUMBER_OF_FIRST_MEMBERS = 10
+NUMBER_OF_FIRST_MEMBERS = 30
 
 
 class MetaGroup(object):
