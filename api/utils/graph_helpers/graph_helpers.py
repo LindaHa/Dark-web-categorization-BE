@@ -2,12 +2,11 @@ from collections import defaultdict
 from api.models import Group, Page, Link
 from typing import Dict, List, Tuple
 from api.utils.graph_helpers.category_helpers import create_categories_for_nodes
+from api.utils.graph_helpers.communityDetection import leiden_partition, louvain_partition
 from api.utils.graph_helpers.isolate_helpers import insert_isolated_nodes_group
 from api.utils.graph_helpers.node_alias_helpers import create_hash_tables, get_node_aliases, \
     get_original_node_key_group_pairs
 from api.utils.graph_helpers.partition_helpers import reverse_partition
-import leidenalg
-import igraph as ig
 
 MAX_PARTITION_COUNT = 50
 
@@ -118,32 +117,15 @@ def get_groups_without_links_and_isolates(
     :return: the original keys of pages with the respective group keys along with isolates if any
     :rtype: Tuple[Dict[str, int], List[int]]
     """
-    graph = ig.Graph()
-
     vertex_aliases = get_node_aliases(pages, table_to_alias)
     graph_edges = get_edges(vertex_aliases)
     graph_nodes = [key for key in table_to_original]
 
-    graph.add_vertices(len(graph_nodes))
-    graph.vs['id'] = graph_nodes
-    graph.add_edges(graph_edges)
-
-    isolates = [(v.index, v['id']) for v in graph.vs.select(_degree=0)]
-    graph.delete_vertices([v[0] for v in isolates])
-    isolates = [v[1] for v in isolates]
-
-    if len(graph.vs) == 0:
-        return {}, isolates
-
+    use_louvain = False
     if use_louvain:
-        partition = graph.community_multilevel()
+        partition, isolates = louvain_partition(graph_nodes, graph_edges)
     else:
-        partition = leidenalg.find_partition(graph, leidenalg.ModularityVertexPartition)
-
-    partition_map = {}
-    for index, p in enumerate(partition.membership):
-        partition_map[graph.vs[index]['id']] = p
-    partition = partition_map
+        partition, isolates = leiden_partition(graph_nodes, graph_edges)
 
     originals_page_group_pairs = get_original_node_key_group_pairs(partition, table_to_original)
 
