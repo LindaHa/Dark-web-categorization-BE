@@ -8,7 +8,7 @@ from api.utils.graph_helpers.node_alias_helpers import create_hash_tables, get_n
     get_original_node_key_group_pairs
 from api.utils.graph_helpers.partition_helpers import reverse_partition
 
-MAX_PARTITION_COUNT = 50
+MAX_PARTITION_COUNT = 30
 
 
 def get_links_and_nodes_of_groups(
