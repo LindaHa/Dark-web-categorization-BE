@@ -22,7 +22,7 @@ cylouvain==0.2.2
 decorator==4.4.2
 defusedxml==0.6.0
 distro-info===0.18ubuntu0.18.04.1
-Django==2.2.2
+Django==2.2.10
 django-filter==2.1.0
 djangorestframework==3.9.4
 entrypoints==0.3
