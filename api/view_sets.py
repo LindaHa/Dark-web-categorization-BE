@@ -9,7 +9,8 @@ from api.utils.convertors import convert_groups_to_meta_groups
 from api.utils.graph_helpers.graph_helpers import get_linked_groups
 from api.utils.graph_helpers.group_by_helpers import divide_pages_by_category, GroupByMode
 from api.utils.graph_helpers.level_helpers import get_subgroups_of_group, get_group
-from api.utils.graph_helpers.details_helpers import get_group_details, get_pages_details
+from api.utils.graph_helpers.details_helpers import get_group_details, get_pages_details, \
+    get_single_page_details_not_from_db
 from . import serializers
 from .repositories import ElasticSearchRepository
 from .utils.graph_helpers.filterHelpers import get_filter_fields_from_client
@@ -192,7 +193,7 @@ class PageDetailsViewSet(viewsets.ViewSet):
             url = request.data["id"]
             pages = self.el_repository.basic_search(search_fields=["url"], search_phrase=url)
             if not pages:
-                result = None
+                result = get_single_page_details_not_from_db(url=url, options=options)
             else:
                 pages = {url: pages[url]} if url in pages else pages
                 result = get_pages_details(pages=pages, options=options, are_whole=True)[0]

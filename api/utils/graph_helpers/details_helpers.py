@@ -1,5 +1,6 @@
 from typing import List, Dict
 from api.models import Group, PageDetails, Page, DetailsOptions
+from api.utils.caching_helpers import get_cached_all_pages
 from api.utils.shelving_helpers import get_shelved_pages
 
 
@@ -82,3 +83,22 @@ def get_content(full_pages: Dict[str, Page], url: str) -> str:
         return page.content
 
     return ''
+
+
+def get_single_page_details_not_from_db(url: str, options: DetailsOptions) -> PageDetails or None:
+    """
+    :param url: the url of the page which details are desired
+    :type url: str
+    :param options: information of which details are to be returned
+    :type options: DetailsOptions
+    :return: page details if ok or none
+    :rtype: PageDetails or None
+    """
+    pages = get_cached_all_pages()
+    if not pages:
+        return None
+    page = pages.get(url)
+    if not page:
+        return None
+
+    return get_pages_details(pages={page.url: page}, options=options, are_whole=True)[0]
