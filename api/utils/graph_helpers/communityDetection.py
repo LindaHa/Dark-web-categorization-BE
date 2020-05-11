@@ -1,12 +1,10 @@
-import time
 from typing import List, Tuple, Dict
 import leidenalg
 import igraph as ig
 import cylouvain
 import networkx as nx
-
-from api.utils.caching_helpers import redis_get_complex_object, redis_cache_complex_object
 from api.utils.graph_helpers.isolate_helpers import filter_isolates
+
 
 def leiden_partition(vertices: List[int], edges: List[Tuple[int, int]]) -> Tuple[Dict[int, int], List[int]]:
     """
@@ -30,13 +28,7 @@ def leiden_partition(vertices: List[int], edges: List[Tuple[int, int]]) -> Tuple
     if len(graph.vs) == 0:
         return {}, isolates
 
-    exec_time = redis_get_complex_object('exec_time')
-    start_time = time.time()
     partition = leidenalg.find_partition(graph, leidenalg.ModularityVertexPartition)
-    stop_time = time.time()
-    the_time = stop_time - start_time
-    print('time: ', the_time)
-    redis_cache_complex_object('exec_time', exec_time + the_time)
     partition_map = {}
 
     for index, p in enumerate(partition.membership):
@@ -63,11 +55,6 @@ def louvain_partition(vertices: List[int], edges: List[Tuple[int, int]]) -> Tupl
     if not graph_no_isolates.node:
         return {}, isolates
 
-    exec_time = redis_get_complex_object('exec_time')
-    start_time = time.time()
     partition = cylouvain.best_partition(graph_no_isolates)
-    stop_time = time.time()
-    the_time = stop_time - start_time
-    redis_cache_complex_object('exec_time', exec_time + the_time)
 
     return partition, isolates
