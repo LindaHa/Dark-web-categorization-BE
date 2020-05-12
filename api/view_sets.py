@@ -1,5 +1,6 @@
 from typing import Dict
 
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework import viewsets
 from api.models import Page, Link, DetailsOptions, FilterOptions
@@ -43,13 +44,20 @@ class GroupsByLinkViewSet(viewsets.ViewSet):
     def list(self, request):
         if are_params_present(["id"], request.query_params):
             group_id = request.query_params["id"]
-            groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.LINK.value)
+            try:
+                groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.LINK.value)
+            except NotFound:
+                return handle_db_problem()
+
             result = convert_groups_to_meta_groups(groups)
 
         else:
             groups = get_cached_all_groups()
             if not groups:
-                response = self.el_repository.fetch_all()
+                try:
+                    response = self.el_repository.fetch_all()
+                except NotFound:
+                    return handle_db_problem()
                 groups = get_linked_groups(response)
                 cache_all_groups(groups)
             result = convert_groups_to_meta_groups(groups)
@@ -72,7 +80,10 @@ class GroupsByLinkViewSet(viewsets.ViewSet):
             )
             filter_fields = get_filter_fields_from_client(options)
             url = request.query_params["url_filter"]
-            response = self.el_repository.basic_search(search_fields=filter_fields, search_phrase=url)
+            try:
+                response = self.el_repository.basic_search(search_fields=filter_fields, search_phrase=url)
+            except NotFound:
+                return handle_db_problem()
             if not response:
                 result = None
             else:
@@ -98,13 +109,21 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
     def list(self, request):
         if are_params_present(["id"], request.query_params):
             group_id = request.query_params["id"]
-            groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.CATEGORY.value)
+            try:
+                groups = get_subgroups_of_group(group_id, self.el_repository, GroupByMode.CATEGORY.value)
+            except NotFound:
+                return handle_db_problem()
+
             result = convert_groups_to_meta_groups(groups)
 
         else:
             groups = get_cached_all_groups_by_category()
             if not groups:
-                pages = self.el_repository.fetch_all()
+                try:
+                    pages = self.el_repository.fetch_all()
+                except NotFound:
+                    return handle_db_problem()
+
                 groups = divide_pages_by_category(pages)
                 cache_all_groups_by_category(groups)
 
@@ -128,7 +147,11 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
             )
             filter_details = get_filter_fields_from_client(options)
             url = request.query_params["url_filter"]
-            response = self.el_repository.basic_search(search_fields=filter_details, search_phrase=url)
+            try:
+                response = self.el_repository.basic_search(search_fields=filter_details, search_phrase=url)
+            except NotFound:
+                return handle_db_problem()
+
             if not response:
                 result = None
             else:
@@ -162,7 +185,10 @@ class GroupDetailsViewSet(viewsets.ViewSet):
             )
             group_id = request.data["id"]
             group_by_mode = request.query_params["groupby"]
-            group = get_group(group_id, self.el_repository, group_by_mode)
+            try:
+                group = get_group(group_id, self.el_repository, group_by_mode)
+            except NotFound:
+                return handle_db_problem()
 
             result = get_group_details(group=group, options=options)
         else:
@@ -191,19 +217,26 @@ class PageDetailsViewSet(viewsets.ViewSet):
                 links=options_data["links"],
             )
             url = request.data["id"]
-            pages = self.el_repository.basic_search(search_fields=["url"], search_phrase=url)
-            if not pages:
-                result = get_single_page_details_not_from_db(url=url, options=options)
-            else:
+            try:
+                pages = self.el_repository.basic_search(search_fields=["url"], search_phrase=url)
                 pages = {url: pages[url]} if url in pages else pages
                 result = get_pages_details(pages=pages, options=options, are_whole=True)[0]
+            except NotFound:
+                result = get_single_page_details_not_from_db(url=url, options=options)
         else:
             result = None
 
         if result is None:
-            return Response({"result": False, "message": "Could not get response"}, content_type='application/json')
+            return handle_db_problem()
         serializer = serializers.PageDetailsSerializer(
             instance=result, many=False)
         return Response(
             {"result": True, "data": serializer.data}
         )
+
+
+def handle_db_problem() -> Response:
+    return Response(
+        {"result": False, "message": "There seems to be a problem with the database."},
+        status=503, content_type='application/json'
+    )

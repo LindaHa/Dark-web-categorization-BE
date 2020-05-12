@@ -1,6 +1,7 @@
 import shelve
 
 import requests
+from rest_framework.exceptions import NotFound
 
 from api.utils.caching_helpers import get_cached_all_pages, cache_all_pages
 from api.utils.shelving_helpers import page_shelf_name, page_shelf_key_prefix, page_shelf_batch_count
@@ -39,6 +40,8 @@ class ElasticSearchRepository(object):
             json = response.json()
             pages = get_pages_from_json(json)
             return pages
+        elif response.status_code == 404:
+            raise NotFound()
         else:
             return None
 
@@ -50,6 +53,8 @@ class ElasticSearchRepository(object):
         response = requests.post(self.server + "_search/scroll", json=payload)
         if response.status_code == 200:
             return response.json()
+        elif response.status_code == 404:
+            raise NotFound()
         else:
             return None
 
@@ -93,6 +98,8 @@ class ElasticSearchRepository(object):
                     print(i)
                 shelved_pages[page_shelf_batch_count] = i
                 shelved_pages.close()
+            elif response.status_code == 404:
+                raise NotFound()
 
             for url, page in final_pages.items():
                 page.content = ''
