@@ -18,6 +18,7 @@ class ElasticSearchRepository(object):
         self.server = "http://147.251.124.23:9200/"
         self.end_point_url = self.server + "tor,i2p/"
 
+    # fetches a specific page based on a search field and search phrase
     def basic_search(self, search_fields, search_phrase) -> Union[Dict[str, Page], None]:
         payload = {
             "size": 500,
@@ -45,6 +46,7 @@ class ElasticSearchRepository(object):
         else:
             return None
 
+    # fetches a chunk of pages using a scroll id
     def fetch_chunk(self, scroll_id) -> Union[str, None]:
         payload = {
             "scroll": "1m",
@@ -58,6 +60,7 @@ class ElasticSearchRepository(object):
         else:
             return None
 
+    # fetches all pages
     def fetch_all(self) -> Dict[str, Page]:
         all_pages_cached = get_cached_all_pages()
         if all_pages_cached:

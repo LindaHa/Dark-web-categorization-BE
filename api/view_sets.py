@@ -37,6 +37,7 @@ def are_params_present(my_params: [str], query_params: Dict[str, str]) -> bool:
     return True
 
 
+# Returns pages or community-members divided into communities or a specific page
 class GroupsByLinkViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
     el_repository = ElasticSearchRepository()
@@ -102,6 +103,7 @@ class GroupsByLinkViewSet(viewsets.ViewSet):
         )
 
 
+# Returns groups divided by category or group members divided into communities
 class GroupsByCategoryViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
     el_repository = ElasticSearchRepository()
@@ -169,6 +171,7 @@ class GroupsByCategoryViewSet(viewsets.ViewSet):
         )
 
 
+# Returns group details based on detail options
 class GroupDetailsViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
     el_repository = ElasticSearchRepository()
@@ -203,6 +206,7 @@ class GroupDetailsViewSet(viewsets.ViewSet):
         )
 
 
+# Returns page details based on detail options
 class PageDetailsViewSet(viewsets.ViewSet):
     # Required for the Browsable API renderer to have a nice form.
     el_repository = ElasticSearchRepository()
@@ -236,6 +240,10 @@ class PageDetailsViewSet(viewsets.ViewSet):
 
 
 def handle_db_problem() -> Response:
+    """
+    :return: Returns a response with status code 503 with a message
+    :rtype: Response
+    """
     return Response(
         {"result": False, "message": "There seems to be a problem with the database."},
         status=503, content_type='application/json'
