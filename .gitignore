@@ -124,7 +124,7 @@ dmypy.json
 .pyre/
 
 #backups
-backup_db_response*
+shelve_adjusted_page_content*
 pages_without_content*
 dump.rdb
 
