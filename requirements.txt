@@ -11,9 +11,7 @@ blinker==1.4
 certifi==2019.6.16
 chardet==3.0.4
 click==6.7
-cloud-init==19.1
 colorama==0.3.7
-command-not-found==0.3
 configobj==5.0.6
 constantly==15.1.0
 Counter==1.0.0
@@ -22,7 +20,6 @@ cycler==0.10.0
 cylouvain==0.2.2
 decorator==4.4.2
 defusedxml==0.6.0
-distro-info===0.18ubuntu0.18.04.1
 Django==3.0.6
 django-cors-headers==3.2.1
 django-filter==2.1.0
@@ -59,7 +56,7 @@ keyring==10.6.0
 keyrings.alt==3.0
 kiwisolver==1.1.0
 langdetect==1.0.7
-language-selector==0.1
+leidenalg==0.8.0
 Markdown==3.1.1
 MarkupSafe==1.1.1
 matplotlib==3.1.1
@@ -73,7 +70,6 @@ nltk==3.4.5
 notebook==6.0.1
 numpy==1.18.3
 oauthlib==2.0.6
-PAM==0.4.2
 pandas==0.25.1
 pandocfilters==1.4.2
 parso==0.5.1
@@ -87,15 +83,12 @@ pyasn1==0.4.2
 pyasn1-modules==0.2.1
 pycrypto==2.6.1
 Pygments==2.4.2
-pygobject==3.26.1
 PyJWT==1.5.3
 pyOpenSSL==17.5.0
 pyparsing==2.4.2
 pyrsistent==0.15.4
 pyserial==3.4
-python-apt==1.6.4
 python-dateutil==2.8.0
-python-debian==0.1.32
 pytz==2020.1
 pyxdg==0.25
 PyYAML==5.1.2
@@ -125,8 +118,6 @@ testpath==0.4.2
 tornado==6.0.3
 traitlets==4.3.3
 Twisted==17.9.0
-ufw==0.36
-unattended-upgrades==0.1
 urllib3==1.25.3
 virtualenv==16.6.1
 wcwidth==0.1.7
