@@ -15,7 +15,7 @@ colorama==0.3.7
 configobj==5.0.6
 constantly==15.1.0
 Counter==1.0.0
-cryptography==2.1.4
+cryptography==3.2
 cycler==0.10.0
 cylouvain==0.2.2
 decorator==4.4.2
